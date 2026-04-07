@@ -478,9 +478,9 @@ Bác sĩ                      Web Admin                     Backend API         
 
 | Thành viên | Vai trò | Công việc chính | Phần trăm |
 |---|---|---|---|
-| Member 1 | Backend Dev + Web Admin | API endpoints, Database, Web Admin dashboard | ~40% |
-| Member 2 | Mobile Developer | React Native App toàn bộ (19 màn hình) | ~35% |
-| Member 3 | Fullstack + Docs + Test | Hỗ trợ backend/mobile, Documentation, Test case | ~25% |
+| Nguyễn Việt Hùng | Backend Dev + Web Admin | API endpoints, Database, Web Admin dashboard | ~40% |
+| Lê Việt Anh | Mobile Developer | React Native App toàn bộ (19 màn hình) | ~35% |
+| Nguyễn Lý Tiền | Fullstack + Docs + Test | Hỗ trợ backend/mobile, Documentation, Test case | ~25% |
 
 ---
 
