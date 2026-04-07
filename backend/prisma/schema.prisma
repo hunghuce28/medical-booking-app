@@ -1,0 +1,266 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// =============================================
+// ENUMS
+// =============================================
+
+enum Role {
+  PATIENT
+  DOCTOR
+  ADMIN
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+}
+
+enum AppointmentStatus {
+  PENDING
+  CONFIRMED
+  REJECTED
+  CANCELLED
+  COMPLETED
+  NO_SHOW
+}
+
+enum DayOfWeek {
+  MONDAY
+  TUESDAY
+  WEDNESDAY
+  THURSDAY
+  FRIDAY
+  SATURDAY
+  SUNDAY
+}
+
+enum SlotStatus {
+  AVAILABLE
+  BOOKED
+  BLOCKED
+}
+
+enum NotificationType {
+  APPOINTMENT_CREATED
+  APPOINTMENT_CONFIRMED
+  APPOINTMENT_REJECTED
+  APPOINTMENT_CANCELLED
+  APPOINTMENT_COMPLETED
+  APPOINTMENT_REMINDER
+  GENERAL
+}
+
+// =============================================
+// MODELS
+// =============================================
+
+/// Bảng người dùng - quản lý tài khoản đăng nhập cho tất cả vai trò
+model User {
+  id            Int       @id @default(autoincrement())
+  email         String    @unique
+  phone         String?   @unique
+  passwordHash  String
+  fullName      String
+  avatar        String?
+  role          Role      @default(PATIENT)
+  isActive      Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Relations
+  patient       Patient?
+  doctor        Doctor?
+  notifications Notification[]
+
+  @@map("users")
+}
+
+/// Bảng bệnh nhân - thông tin chi tiết của bệnh nhân
+model Patient {
+  id              Int       @id @default(autoincrement())
+  userId          Int       @unique
+  dateOfBirth     DateTime?
+  gender          Gender?
+  address         String?
+  insuranceNumber String?
+  bloodType       String?
+  allergies       String?
+  medicalHistory  String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  // Relations
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  appointments    Appointment[]
+  reviews         Review[]
+
+  @@map("patients")
+}
+
+/// Bảng chuyên khoa - danh mục các chuyên khoa y tế
+model Specialty {
+  id          Int       @id @default(autoincrement())
+  name        String    @unique
+  description String?
+  icon        String?
+  isActive    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // Relations
+  doctors     Doctor[]
+
+  @@map("specialties")
+}
+
+/// Bảng bác sĩ - thông tin chi tiết của bác sĩ
+model Doctor {
+  id              Int       @id @default(autoincrement())
+  userId          Int       @unique
+  specialtyId     Int
+  degree          String?     // Bằng cấp: Thạc sĩ, Tiến sĩ, PGS, GS...
+  description     String?     // Giới thiệu bản thân
+  experienceYears Int         @default(0)
+  consultationFee Decimal     @default(0) @db.Decimal(10, 2)
+  rating          Float       @default(0)
+  totalReviews    Int         @default(0)
+  isActive        Boolean     @default(true)
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  // Relations
+  user            User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  specialty       Specialty   @relation(fields: [specialtyId], references: [id])
+  schedules       DoctorSchedule[]
+  timeSlots       TimeSlot[]
+  appointments    Appointment[]
+  reviews         Review[]
+
+  @@map("doctors")
+}
+
+/// Bảng lịch làm việc bác sĩ - định nghĩa giờ làm việc theo ngày trong tuần
+model DoctorSchedule {
+  id                  Int       @id @default(autoincrement())
+  doctorId            Int
+  dayOfWeek           DayOfWeek
+  startTime           String    // Format: "08:00"
+  endTime             String    // Format: "17:00"
+  slotDurationMinutes Int       @default(30) // Thời lượng mỗi slot (phút)
+  isActive            Boolean   @default(true)
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  // Relations
+  doctor              Doctor    @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+
+  @@unique([doctorId, dayOfWeek])
+  @@map("doctor_schedules")
+}
+
+/// Bảng khung giờ khám - các slot cụ thể theo ngày
+model TimeSlot {
+  id          Int         @id @default(autoincrement())
+  doctorId    Int
+  date        DateTime    @db.Date
+  startTime   String      // Format: "08:00"
+  endTime     String      // Format: "08:30"
+  status      SlotStatus  @default(AVAILABLE)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  // Relations
+  doctor      Doctor      @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+  appointment Appointment?
+
+  @@unique([doctorId, date, startTime])
+  @@map("time_slots")
+}
+
+/// Bảng lịch khám - quản lý các cuộc hẹn khám bệnh
+model Appointment {
+  id              Int                 @id @default(autoincrement())
+  patientId       Int
+  doctorId        Int
+  timeSlotId      Int                 @unique
+  appointmentDate DateTime            @db.Date
+  status          AppointmentStatus   @default(PENDING)
+  symptoms        String?             // Triệu chứng bệnh nhân mô tả
+  notes           String?             // Ghi chú thêm
+  cancelReason    String?             // Lý do hủy (nếu có)
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+
+  // Relations
+  patient         Patient             @relation(fields: [patientId], references: [id])
+  doctor          Doctor              @relation(fields: [doctorId], references: [id])
+  timeSlot        TimeSlot            @relation(fields: [timeSlotId], references: [id])
+  medicalRecord   MedicalRecord?
+  review          Review?
+
+  @@map("appointments")
+}
+
+/// Bảng kết quả khám - bác sĩ ghi chẩn đoán và đơn thuốc
+model MedicalRecord {
+  id              Int       @id @default(autoincrement())
+  appointmentId   Int       @unique
+  diagnosis       String    // Chẩn đoán
+  prescription    String?   // Đơn thuốc
+  notes           String?   // Ghi chú của bác sĩ
+  followUpDate    DateTime? // Ngày tái khám (nếu có)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  // Relations
+  appointment     Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+
+  @@map("medical_records")
+}
+
+/// Bảng đánh giá - bệnh nhân đánh giá bác sĩ sau khi khám
+model Review {
+  id              Int       @id @default(autoincrement())
+  appointmentId   Int       @unique
+  patientId       Int
+  doctorId        Int
+  rating          Int       // 1-5 sao
+  comment         String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  // Relations
+  appointment     Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+  patient         Patient     @relation(fields: [patientId], references: [id])
+  doctor          Doctor      @relation(fields: [doctorId], references: [id])
+
+  @@map("reviews")
+}
+
+/// Bảng thông báo - quản lý thông báo đẩy cho người dùng
+model Notification {
+  id        Int               @id @default(autoincrement())
+  userId    Int
+  title     String
+  message   String
+  type      NotificationType  @default(GENERAL)
+  isRead    Boolean           @default(false)
+  data      Json?             // Dữ liệu bổ sung (VD: appointmentId)
+  createdAt DateTime          @default(now())
+
+  // Relations
+  user      User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("notifications")
+}
