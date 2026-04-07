@@ -114,9 +114,9 @@ npm run dev
 
 | STT | Họ tên | Vai trò | Công việc chính |
 |---|---|---|---|
-| 1 | [Tên thành viên 1] | Backend + Web Admin | API, Database, Web Admin |
-| 2 | [Tên thành viên 2] | Mobile Developer | React Native App |
-| 3 | [Tên thành viên 3] | Fullstack + Docs | Hỗ trợ, Tài liệu, Test |
+| 1 | Nguyễn Việt Hùng | Backend + Web Admin | API, Database, Web Admin |
+| 2 | Lê Việt Anh | Mobile Developer | React Native App |
+| 3 | Nguyễn Lý Tiền | Fullstack + Docs | Hỗ trợ, Tài liệu, Test |
 
 ## 📅 Timeline
 
