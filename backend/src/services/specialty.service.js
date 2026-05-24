@@ -1,9 +1,12 @@
 const prisma = require('../utils/prisma');
 
 class SpecialtyService {
-  async getAllSpecialties() {
+  async getAllSpecialties(query = {}) {
+    const { includeInactive } = query;
+    const filter = includeInactive === 'true' ? {} : { isActive: true };
+
     return await prisma.specialty.findMany({
-      where: { isActive: true },
+      where: filter,
       include: {
         _count: {
           select: { doctors: true }

@@ -3,7 +3,7 @@ const specialtyService = require('../services/specialty.service');
 class SpecialtyController {
   async getAll(req, res, next) {
     try {
-      const specialties = await specialtyService.getAllSpecialties();
+      const specialties = await specialtyService.getAllSpecialties(req.query);
       res.status(200).json({ success: true, data: specialties });
     } catch (error) {
       next(error);

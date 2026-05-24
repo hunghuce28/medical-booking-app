@@ -1,4 +1,5 @@
 const prisma = require('../utils/prisma');
+const socket = require('../utils/socket');
 
 class NotificationService {
   async getByUserId(userId, query = {}) {
@@ -37,7 +38,7 @@ class NotificationService {
    * Hàm tiện ích: tạo thông báo mới (gọi từ service khác)
    */
   static async createNotification({ userId, title, message, type = 'GENERAL', data = null }) {
-    return await prisma.notification.create({
+    const notification = await prisma.notification.create({
       data: {
         userId: parseInt(userId),
         title,
@@ -46,8 +47,14 @@ class NotificationService {
         data,
       }
     });
+
+    // Phát sự kiện realtime tới đúng client của user tương ứng
+    socket.sendToUser(userId, 'notification', notification);
+
+    return notification;
   }
 }
 
 module.exports = new NotificationService();
 module.exports.createNotification = NotificationService.createNotification;
+

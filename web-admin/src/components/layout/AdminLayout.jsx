@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Layout, Menu, theme, Dropdown, Space, Avatar } from 'antd';
+import React, { useState, useEffect } from 'react';
+import { Layout, Menu, theme, Dropdown, Space, Avatar, notification } from 'antd';
 import { 
   DashboardOutlined, 
   UserOutlined, 
@@ -11,6 +11,7 @@ import {
 } from '@ant-design/icons';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import useAuthStore from '../../stores/authStore';
+import { connectSocket, disconnectSocket } from '../../utils/socket';
 
 const { Header, Sider, Content } = Layout;
 
@@ -20,9 +21,41 @@ const AdminLayout = () => {
   const navigate = useNavigate();
   const location = useLocation();
   
-  // Lấy user từ store
+  // Lấy user & token từ store
   const user = useAuthStore((state) => state.user);
+  const token = useAuthStore((state) => state.token);
   const logout = useAuthStore((state) => state.logout);
+
+  useEffect(() => {
+    let socket = null;
+    if (token) {
+      // Thiết lập kết nối socket
+      socket = connectSocket(token);
+
+      // Lắng nghe sự kiện thông báo mới
+      socket.on('notification', (data) => {
+        notification.open({
+          message: <span style={{ fontWeight: 600, color: '#1f1f1f' }}>{data.title || 'Thông báo mới'}</span>,
+          description: <span style={{ color: '#595959' }}>{data.message}</span>,
+          placement: 'bottomRight',
+          duration: 6,
+          style: {
+            borderRadius: '12px',
+            borderLeft: '5px solid #1677ff',
+            boxShadow: '0 6px 16px -8px rgba(0,0,0,0.08), 0 9px 28px 0 rgba(0,0,0,0.05), 0 12px 48px 16px rgba(0,0,0,0.03)',
+            backgroundColor: '#ffffff',
+          }
+        });
+      });
+    }
+
+    return () => {
+      if (socket) {
+        socket.off('notification');
+      }
+      disconnectSocket();
+    };
+  }, [token]);
 
   const menuItems = [
     { key: '/admin/dashboard', icon: <DashboardOutlined />, label: 'Tổng quan' },
@@ -33,6 +66,7 @@ const AdminLayout = () => {
   ];
 
   const handleLogout = () => {
+    disconnectSocket(); // Ngắt kết nối socket khi logout
     logout(); // Xóa token + user khỏi store và localStorage
     navigate('/login');
   };
@@ -48,6 +82,7 @@ const AdminLayout = () => {
       onClick: handleLogout
     },
   ];
+
 
   return (
     <Layout style={{ minHeight: '100vh' }}>
