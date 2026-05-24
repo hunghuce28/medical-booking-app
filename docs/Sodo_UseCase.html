@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sơ Đồ Use Case - Ứng Dụng Đặt Lịch Khám Bệnh</title>
+    <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+        mermaid.initialize({ startOnLoad: true, theme: 'default' });
+    </script>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 20px; background-color: #f8fafc; }
+        .container { background-color: #ffffff; padding: 30px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        h1 { text-align: center; color: #1e293b; }
+        .mermaid { display: flex; justify-content: center; margin-top: 20px; }
+        .help-text { text-align: center; color: #64748b; font-size: 14px; margin-top: 20px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Sơ Đồ Use Case Tổng Quan</h1>
+        
+        <div class="mermaid">
+        flowchart LR
+            %% Định nghĩa style
+            classDef actor fill:#e11d48,stroke:#be123c,stroke-width:2px,color:#fff,font-weight:bold,shape:circle
+            classDef usecase fill:#e0f2fe,stroke:#0284c7,stroke-width:2px,color:#0f172a,border-radius:20px
+            classDef system fill:#f8fafc,stroke:#94a3b8,stroke-width:2px,stroke-dasharray: 5 5
+
+            %% Actors
+            Patient((Bệnh nhân)):::actor
+            Doctor((Bác sĩ)):::actor
+            Admin((Admin)):::actor
+
+            %% System Boundary
+            subgraph System Boundary[Hệ Thống Đặt Lịch Khám Bệnh]
+                direction TB
+                
+                %% Use Cases
+                UC_Auth([Đăng ký / Đăng nhập]):::usecase
+                UC_Profile([Quản lý hồ sơ]):::usecase
+                UC_Search([Tìm kiếm Bác sĩ]):::usecase
+                UC_Book([Đặt lịch khám]):::usecase
+                UC_History([Quản lý & Xem lịch sử]):::usecase
+                UC_Review([Đánh giá Bác sĩ]):::usecase
+                
+                UC_DocSchedule([Quản lý Lịch làm việc]):::usecase
+                UC_DocAppt([Tiếp nhận Lịch khám]):::usecase
+                UC_MedRecord([Kê đơn & Bệnh án]):::usecase
+                
+                UC_AdminSpec([Quản lý Chuyên khoa]):::usecase
+                UC_AdminUser([Quản lý Bác sĩ/Bệnh nhân]):::usecase
+                UC_Report([Xem Báo cáo Thống kê]):::usecase
+            end
+
+            %% Relationships - Patient
+            Patient --- UC_Auth
+            Patient --- UC_Profile
+            Patient --- UC_Search
+            Patient --- UC_Book
+            Patient --- UC_History
+            Patient --- UC_Review
+
+            %% Relationships - Doctor
+            Doctor --- UC_Auth
+            Doctor --- UC_Profile
+            Doctor --- UC_DocSchedule
+            Doctor --- UC_DocAppt
+            Doctor --- UC_MedRecord
+
+            %% Relationships - Admin
+            Admin --- UC_Auth
+            Admin --- UC_AdminSpec
+            Admin --- UC_AdminUser
+            Admin --- UC_Report
+
+            %% Include/Extend Luồng xử lý
+            UC_Book -. "<< include >>" .-> UC_Search
+        </div>
+
+        <p class="help-text">✨ Mẹo: Bạn có thể Chuột phải vào sơ đồ > Chọn "Lưu hình ảnh thành..." (Save image as) để lấy ảnh chèn vào báo cáo đồ án.</p>
+    </div>
+</body>
+</html>

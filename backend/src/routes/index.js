@@ -1,0 +1,22 @@
+const express = require('express');
+const router = express.Router();
+
+const authRoutes = require('./auth.routes');
+const doctorRoutes = require('./doctor.routes');
+const specialtyRoutes = require('./specialty.routes');
+const appointmentRoutes = require('./appointment.routes');
+const patientRoutes = require('./patient.routes');
+const medicalRecordRoutes = require('./medical-record.routes');
+const reviewRoutes = require('./review.routes');
+const notificationRoutes = require('./notification.routes');
+
+router.use('/auth', authRoutes);
+router.use('/specialties', specialtyRoutes);
+router.use('/doctors', doctorRoutes);
+router.use('/appointments', appointmentRoutes);
+router.use('/patients', patientRoutes);
+router.use('/medical-records', medicalRecordRoutes);
+router.use('/reviews', reviewRoutes);
+router.use('/notifications', notificationRoutes);
+
+module.exports = router;
