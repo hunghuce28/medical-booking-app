@@ -22,7 +22,7 @@ class AppointmentController {
   async updateStatus(req, res, next) {
     try {
       const { status, cancelReason } = req.body;
-      const appointment = await appointmentService.updateStatus(req.params.id, status, cancelReason);
+      const appointment = await appointmentService.updateStatus(req.params.id, status, cancelReason, req.user);
       res.status(200).json({ success: true, message: 'Cập nhật trạng thái thành công', data: appointment });
     } catch (error) {
       res.status(400).json({ success: false, message: error.message });

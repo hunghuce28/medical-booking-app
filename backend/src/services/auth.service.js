@@ -139,6 +139,47 @@ class AuthService {
     const { passwordHash: _, ...userWithoutPassword } = user;
     return userWithoutPassword;
   }
+
+  async refreshToken(token) {
+    if (!token) {
+      throw new Error('Refresh token không hợp lệ hoặc đã hết hạn!');
+    }
+
+    try {
+      // 1. Verify token
+      const decoded = jwt.verify(token, JWT_SECRET);
+      
+      // 2. Tìm user trong DB để đảm bảo còn tồn tại và hoạt động
+      const user = await prisma.user.findUnique({
+        where: { id: decoded.id },
+      });
+
+      if (!user) {
+        throw new Error('Không tìm thấy người dùng!');
+      }
+
+      if (!user.isActive) {
+        throw new Error('Tài khoản của bạn đã bị khóa!');
+      }
+
+      // 3. Sinh token mới
+      const payload = {
+        id: user.id,
+        email: user.email,
+        role: user.role
+      };
+
+      const accessToken = jwt.sign(payload, JWT_SECRET, { expiresIn: '7d' });
+      const refreshToken = jwt.sign(payload, JWT_SECRET, { expiresIn: '30d' });
+
+      return {
+        accessToken,
+        refreshToken
+      };
+    } catch (error) {
+      throw new Error('Refresh token không hợp lệ hoặc đã hết hạn!');
+    }
+  }
 }
 
 module.exports = new AuthService();

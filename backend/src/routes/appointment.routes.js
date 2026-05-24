@@ -15,7 +15,7 @@ router.get('/', verifyToken, authorize('ADMIN', 'DOCTOR'), appointmentController
 // [POST] /api/appointments — Bệnh nhân đặt lịch (hoặc Admin đặt hộ)
 router.post('/', verifyToken, appointmentController.create);
 
-// [PATCH] /api/appointments/:id/status — Admin/Bác sĩ duyệt/từ chối/hoàn thành
-router.patch('/:id/status', verifyToken, authorize('ADMIN', 'DOCTOR'), appointmentController.updateStatus);
+// [PATCH] /api/appointments/:id/status — Admin/Bác sĩ duyệt/từ chối/hoàn thành, Bệnh nhân hủy
+router.patch('/:id/status', verifyToken, authorize('ADMIN', 'DOCTOR', 'PATIENT'), appointmentController.updateStatus);
 
 module.exports = router;

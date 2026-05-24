@@ -15,4 +15,7 @@ router.get('/me', verifyToken, authController.me);
 // [PUT] /api/auth/change-password — Đổi mật khẩu (yêu cầu đăng nhập)
 router.put('/change-password', verifyToken, authController.changePassword);
 
+// [POST] /api/auth/refresh-token — Làm mới token
+router.post('/refresh-token', authController.refreshToken);
+
 module.exports = router;

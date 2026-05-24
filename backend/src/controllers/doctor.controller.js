@@ -65,6 +65,19 @@ class DoctorController {
       next(error);
     }
   }
+
+  async updateSchedules(req, res, next) {
+    try {
+      const { schedules } = req.body;
+      if (!Array.isArray(schedules)) {
+        return res.status(400).json({ success: false, message: 'Danh sách schedules phải là một mảng' });
+      }
+      const result = await doctorService.updateSchedules(req.params.id, schedules);
+      res.status(200).json({ success: true, message: 'Cập nhật lịch làm việc thành công', data: result });
+    } catch (error) {
+      res.status(400).json({ success: false, message: error.message });
+    }
+  }
 }
 
 module.exports = new DoctorController();

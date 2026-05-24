@@ -25,4 +25,7 @@ router.put('/:id', verifyToken, authorize('ADMIN'), doctorController.update);
 // [DELETE] /api/doctors/:id
 router.delete('/:id', verifyToken, authorize('ADMIN'), doctorController.delete);
 
+// [PUT] /api/doctors/:id/schedules — Cập nhật lịch làm việc bác sĩ
+router.put('/:id/schedules', verifyToken, authorize('ADMIN', 'DOCTOR'), doctorController.updateSchedules);
+
 module.exports = router;

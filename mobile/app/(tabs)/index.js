@@ -19,8 +19,10 @@ import { Ionicons } from '@expo/vector-icons';
 import useAuthStore from '../../stores/authStore';
 import api from '../../services/api';
 import Colors from '../../constants/colors';
+import { useRouter } from 'expo-router';
 
 export default function HomeScreen() {
+  const router = useRouter();
   const user = useAuthStore((state) => state.user);
   const [specialties, setSpecialties] = useState([]);
   const [doctors, setDoctors] = useState([]);
@@ -126,7 +128,11 @@ export default function HomeScreen() {
             </TouchableOpacity>
           </View>
           {doctors.map((doctor) => (
-            <TouchableOpacity key={doctor.id} style={styles.doctorCard}>
+            <TouchableOpacity
+              key={doctor.id}
+              style={styles.doctorCard}
+              onPress={() => router.push(`/doctor/${doctor.id}`)}
+            >
               <View style={styles.doctorAvatar}>
                 <Text style={styles.doctorAvatarText}>
                   {doctor.user?.fullName?.charAt(0) || '?'}

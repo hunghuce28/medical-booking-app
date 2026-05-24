@@ -19,10 +19,13 @@ import useAuthStore from '../../stores/authStore';
 import api from '../../services/api';
 import Colors from '../../constants/colors';
 import { showAlert } from '../../utils/alert';
+import { useLocalSearchParams } from 'expo-router';
 
 const STEPS = ['Chuyên khoa', 'Bác sĩ', 'Ngày khám', 'Giờ khám', 'Xác nhận', 'Hoàn tất'];
 
 export default function BookingScreen() {
+  const params = useLocalSearchParams();
+  const { doctorId } = params;
   const user = useAuthStore((s) => s.user);
   const [step, setStep] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -36,6 +39,29 @@ export default function BookingScreen() {
   const [slots, setSlots] = useState([]);
   const [selectedSlot, setSelectedSlot] = useState(null);
   const [symptoms, setSymptoms] = useState('');
+
+  // Tự động chọn bác sĩ khi có doctorId từ params
+  useEffect(() => {
+    if (doctorId) {
+      const autoSelectDoctor = async () => {
+        try {
+          setLoading(true);
+          const res = await api.get(`/doctors/${doctorId}`);
+          const doc = res.data;
+          if (doc) {
+            setSelectedDoctor(doc);
+            setSelectedSpecialty(doc.specialty);
+            setStep(2); // Nhảy thẳng tới Chọn ngày khám (Step 2)
+          }
+        } catch (e) {
+          console.log('Error auto-selecting doctor:', e);
+        } finally {
+          setLoading(false);
+        }
+      };
+      autoSelectDoctor();
+    }
+  }, [doctorId]);
 
   // ───── Step 1: Load chuyên khoa ─────
   useEffect(() => {

@@ -88,6 +88,30 @@ class AuthController {
       next(error);
     }
   }
+
+  async refreshToken(req, res, next) {
+    try {
+      const { refreshToken } = req.body;
+      if (!refreshToken) {
+        return res.status(400).json({
+          success: false,
+          message: 'Vui lòng cung cấp refresh token'
+        });
+      }
+
+      const result = await authService.refreshToken(refreshToken);
+      res.status(200).json({
+        success: true,
+        message: 'Lấy token mới thành công',
+        data: result
+      });
+    } catch (error) {
+      res.status(401).json({
+        success: false,
+        message: error.message
+      });
+    }
+  }
 }
 
 module.exports = new AuthController();

@@ -170,6 +170,60 @@ class DoctorService {
     return result;
   }
 
+  async updateSchedules(doctorId, schedules) {
+    const docId = parseInt(doctorId);
+    const doctor = await prisma.doctor.findUnique({ where: { id: docId } });
+    if (!doctor) throw new Error('Không tìm thấy bác sĩ');
+
+    // Chạy transaction
+    return await prisma.$transaction(async (tx) => {
+      const updatedSchedules = [];
+      const updatedDays = [];
+
+      for (const sched of schedules) {
+        const { dayOfWeek, startTime, endTime, slotDurationMinutes = 30, isActive = true } = sched;
+        updatedDays.push(dayOfWeek);
+
+        const item = await tx.doctorSchedule.upsert({
+          where: {
+            doctorId_dayOfWeek: {
+              doctorId: docId,
+              dayOfWeek
+            }
+          },
+          update: {
+            startTime,
+            endTime,
+            slotDurationMinutes: parseInt(slotDurationMinutes),
+            isActive
+          },
+          create: {
+            doctorId: docId,
+            dayOfWeek,
+            startTime,
+            endTime,
+            slotDurationMinutes: parseInt(slotDurationMinutes),
+            isActive
+          }
+        });
+        updatedSchedules.push(item);
+      }
+
+      // Vô hiệu hóa các ngày khác không được truyền lên
+      await tx.doctorSchedule.updateMany({
+        where: {
+          doctorId: docId,
+          dayOfWeek: { notIn: updatedDays }
+        },
+        data: {
+          isActive: false
+        }
+      });
+
+      return updatedSchedules;
+    });
+  }
+
   async deleteDoctor(id) {
     // Soft delete: chuyển isActive thành false
     return await prisma.doctor.update({
