@@ -1,15 +1,148 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Outfit:wght@300;400;500;600;700;800&display=swap');
+
+:root {
+  --primary-gradient: linear-gradient(135deg, #1677ff 0%, #00b96b 100%);
+  --accent-gradient: linear-gradient(135deg, #722ed1 0%, #1677ff 100%);
+  --bg-gradient: linear-gradient(180deg, #f8faff 0%, #eef3ff 100%);
+  --glass-bg: rgba(255, 255, 255, 0.85);
+  --glass-border: rgba(255, 255, 255, 0.6);
+  --card-shadow: 0 10px 30px 0 rgba(22, 119, 255, 0.04);
+}
+
 body {
   margin: 0;
   padding: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial,
-    'Noto Sans', sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol',
-    'Noto Color Emoji';
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background-color: #f0f2f5;
+  background: var(--bg-gradient);
+  min-height: 100vh;
 }
 
 #root {
   width: 100%;
   min-height: 100vh;
+}
+
+/* --- Premium Animations & Hovers --- */
+.hover-scale {
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+.hover-scale:hover {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 12px 20px rgba(0, 0, 0, 0.08);
+}
+
+.gradient-text {
+  background: var(--primary-gradient);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  font-weight: 800;
+}
+
+.gradient-button {
+  background: var(--primary-gradient) !important;
+  border: none !important;
+  color: white !important;
+  font-weight: 600 !important;
+  box-shadow: 0 4px 10px rgba(22, 119, 255, 0.2) !important;
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1) !important;
+  border-radius: 8px !important;
+  height: 38px !important;
+  padding: 4px 16px !important;
+}
+.gradient-button:hover {
+  opacity: 0.95 !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 6px 16px rgba(22, 119, 255, 0.35) !important;
+}
+
+.accent-button {
+  background: var(--accent-gradient) !important;
+  border: none !important;
+  color: white !important;
+  font-weight: 600 !important;
+  box-shadow: 0 4px 10px rgba(114, 46, 209, 0.2) !important;
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1) !important;
+  border-radius: 8px !important;
+  height: 38px !important;
+}
+.accent-button:hover {
+  opacity: 0.95 !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 6px 16px rgba(114, 46, 209, 0.35) !important;
+}
+
+/* --- Glassmorphic Card --- */
+.glass-card {
+  background: var(--glass-bg) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  border: 1px solid var(--glass-border) !important;
+  border-radius: 16px !important;
+  box-shadow: var(--card-shadow) !important;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+.glass-card:hover {
+  box-shadow: 0 16px 40px 0 rgba(22, 119, 255, 0.08) !important;
+}
+
+/* --- Styled Table --- */
+.ant-table {
+  background: transparent !important;
+}
+.ant-table-thead > tr > th {
+  background: rgba(22, 119, 255, 0.05) !important;
+  font-weight: 700 !important;
+  color: #1a1a1a !important;
+  border-bottom: 2px solid rgba(22, 119, 255, 0.1) !important;
+}
+.ant-table-tbody > tr {
+  transition: all 0.2s ease;
+}
+.ant-table-tbody > tr:hover > td {
+  background: rgba(22, 119, 255, 0.02) !important;
+}
+
+/* --- Glow effect for avatars --- */
+.avatar-glow {
+  box-shadow: 0 4px 10px rgba(22, 119, 255, 0.1);
+  border: 2px solid #ffffff !important;
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  border-radius: 12px !important;
+}
+.avatar-glow:hover {
+  transform: rotate(3deg) scale(1.08);
+  box-shadow: 0 6px 16px rgba(22, 119, 255, 0.2);
+}
+
+/* --- Custom form fields --- */
+.premium-input {
+  border-radius: 8px !important;
+  border: 1.5px solid #e2e8f0 !important;
+  padding: 8px 12px !important;
+  transition: all 0.3s ease !important;
+  font-family: 'Plus Jakarta Sans', sans-serif !important;
+}
+.premium-input:focus, .premium-input-focused {
+  border-color: #1677ff !important;
+  box-shadow: 0 0 0 3px rgba(22, 119, 255, 0.08) !important;
+}
+
+.premium-textarea {
+  border-radius: 8px !important;
+  border: 1.5px solid #e2e8f0 !important;
+  padding: 10px 12px !important;
+  transition: all 0.3s ease !important;
+  font-family: 'Plus Jakarta Sans', sans-serif !important;
+}
+.premium-textarea:focus {
+  border-color: #1677ff !important;
+  box-shadow: 0 0 0 3px rgba(22, 119, 255, 0.08) !important;
+}
+
+/* --- Switch design --- */
+.ant-switch-checked {
+  background-color: #00b96b !important;
 }

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Table, Button, Space, Card, message, Modal, Form, Input, Popconfirm, Tag, Switch, Upload, Avatar } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined, UploadOutlined, EyeOutlined, EyeInvisibleOutlined } from '@ant-design/icons';
+import { PlusOutlined, EditOutlined, DeleteOutlined, UploadOutlined, EyeOutlined, EyeInvisibleOutlined, AppstoreOutlined } from '@ant-design/icons';
 import axiosClient from '../../utils/axiosClient';
 
 const SpecialtyManage = () => {
@@ -17,13 +17,12 @@ const SpecialtyManage = () => {
   const fetchSpecialties = async () => {
     try {
       setLoading(true);
-      // Gọi API lấy toàn bộ chuyên khoa bao gồm cả chuyên khoa ẩn (tạm ngưng hoạt động)
       const response = await axiosClient.get('/specialties?includeInactive=true');
       if (response.success) {
         const specialties = response.data.map((spec) => ({
           key: spec.id.toString(),
           name: spec.name,
-          description: spec.description || 'Không có mô tả',
+          description: spec.description || 'Không có mô tả chi tiết.',
           icon: spec.icon,
           isActive: spec.isActive,
           doctorCount: spec._count?.doctors || 0,
@@ -47,15 +46,14 @@ const SpecialtyManage = () => {
       setEditingId(record.key);
       form.setFieldsValue({
         name: record.name,
-        description: record.description !== 'Không có mô tả' ? record.description : '',
+        description: record.description !== 'Không có mô tả chi tiết.' ? record.description : '',
         icon: record.icon || '',
       });
-      // Nếu đã có icon, hiển thị trong danh sách file preview
       if (record.icon) {
         setFileList([
           {
             uid: '-1',
-            name: 'icon_cu.png',
+            name: 'icon_specialty.png',
             status: 'done',
             url: record.icon,
           },
@@ -77,7 +75,6 @@ const SpecialtyManage = () => {
     setFileList([]);
   };
 
-  // Xử lý tự upload file thủ công bằng axiosClient
   const handleUpload = async ({ file, onSuccess, onError }) => {
     const formData = new FormData();
     formData.append('file', file);
@@ -91,7 +88,7 @@ const SpecialtyManage = () => {
       });
       
       if (res.success && res.data?.url) {
-        message.success('Tải ảnh lên thành công!');
+        message.success('Tải ảnh biểu tượng lên thành công!');
         form.setFieldValue('icon', res.data.url);
         setFileList([
           {
@@ -103,7 +100,7 @@ const SpecialtyManage = () => {
         ]);
         onSuccess(res.data);
       } else {
-        throw new Error('Không nhận được URL ảnh');
+        throw new Error('Không nhận được URL ảnh từ máy chủ');
       }
     } catch (error) {
       console.error('Upload error:', error);
@@ -122,26 +119,23 @@ const SpecialtyManage = () => {
       };
 
       if (editingId) {
-        // Cập nhật
         const res = await axiosClient.put(`/specialties/${editingId}`, dataSubmit);
         if (res.success) {
-          message.success('Cập nhật chuyên khoa thành công');
+          message.success('Cập nhật thông tin chuyên khoa thành công');
         }
       } else {
-        // Tạo mới
         const res = await axiosClient.post('/specialties', dataSubmit);
         if (res.success) {
-          message.success('Thêm mới chuyên khoa thành công');
+          message.success('Thêm mới chuyên khoa y tế thành công');
         }
       }
       setIsModalOpen(false);
       fetchSpecialties();
     } catch (error) {
-      message.error(error.response?.data?.message || 'Có lỗi xảy ra!');
+      message.error(error.response?.data?.message || 'Có lỗi xảy ra, vui lòng thử lại!');
     }
   };
 
-  // Đổi trạng thái isActive trực tiếp bằng nút Switch trên bảng
   const handleToggleStatus = async (record) => {
     try {
       const newStatus = !record.isActive;
@@ -149,7 +143,7 @@ const SpecialtyManage = () => {
         isActive: newStatus,
       });
       if (res.success) {
-        message.success(`Đã ${newStatus ? 'kích hoạt' : 'tạm ngưng'} chuyên khoa thành công`);
+        message.success(`Đã ${newStatus ? 'kích hoạt hoạt động' : 'tạm ngưng hoạt động'} chuyên khoa`);
         fetchSpecialties();
       }
     } catch (error) {
@@ -161,11 +155,11 @@ const SpecialtyManage = () => {
     try {
       const res = await axiosClient.delete(`/specialties/${id}`);
       if (res.success) {
-        message.success('Đã ẩn chuyên khoa (chuyển sang trạng thái tạm ngưng)');
+        message.success('Đã ẩn chuyên khoa thành công');
         fetchSpecialties();
       }
     } catch (error) {
-      message.error('Không thể xóa chuyên khoa này!');
+      message.error('Không thể ngưng hoạt động chuyên khoa này!');
     }
   };
 
@@ -174,41 +168,75 @@ const SpecialtyManage = () => {
       title: 'Biểu tượng',
       dataIndex: 'icon',
       key: 'icon',
-      width: 100,
+      width: 120,
+      align: 'center',
       render: (icon) => (
         <Avatar
           src={icon}
-          size={50}
+          size={56}
           shape="square"
+          className="avatar-glow"
           style={{ 
-            backgroundColor: '#f5f5f5', 
-            border: '1px solid #f0f0f0',
+            backgroundColor: '#f8fafc',
             objectFit: 'cover'
           }}
-          alt="icon"
-        >
-          Spec
-        </Avatar>
+          icon={<AppstoreOutlined style={{ color: '#1677ff', fontSize: 24 }} />}
+          alt="biểu tượng chuyên khoa"
+        />
       ),
     },
     { 
       title: 'Tên chuyên khoa', 
       dataIndex: 'name', 
       key: 'name', 
-      render: (text) => <span style={{ fontWeight: 600 }}>{text}</span> 
+      width: 200,
+      render: (text) => (
+        <span style={{ fontWeight: 700, fontSize: '15px', color: '#1e293b' }}>
+          {text}
+        </span>
+      )
     },
-    { title: 'Mô tả', dataIndex: 'description', key: 'description' },
-    { title: 'Số bác sĩ', dataIndex: 'doctorCount', key: 'doctorCount', align: 'center' },
+    { 
+      title: 'Mô tả chi tiết', 
+      dataIndex: 'description', 
+      key: 'description',
+      render: (text) => (
+        <span style={{ color: '#64748b', fontSize: '14px', lineHeight: 1.5 }}>
+          {text}
+        </span>
+      )
+    },
+    { 
+      title: 'Số bác sĩ', 
+      dataIndex: 'doctorCount', 
+      key: 'doctorCount', 
+      align: 'center',
+      width: 110,
+      render: (count) => (
+        <Tag color="cyan" style={{ borderRadius: '6px', fontWeight: 600, padding: '2px 8px', fontSize: '13px' }}>
+          {count} bác sĩ
+        </Tag>
+      )
+    },
     {
       title: 'Trạng thái',
       dataIndex: 'isActive',
       key: 'isActive',
-      width: 150,
+      width: 140,
       align: 'center',
       render: (isActive, record) => (
-        <Space direction="vertical" size="small">
-          <Tag color={isActive ? 'success' : 'error'}>
-            {isActive ? 'Hoạt động' : 'Tạm ngưng'}
+        <Space direction="vertical" size={6}>
+          <Tag 
+            color={isActive ? 'success' : 'error'} 
+            style={{ 
+              borderRadius: '20px', 
+              fontWeight: 600, 
+              padding: '2px 10px',
+              border: 'none',
+              boxShadow: isActive ? '0 2px 8px rgba(82,196,26,0.15)' : '0 2px 8px rgba(255,77,79,0.15)'
+            }}
+          >
+            {isActive ? 'Đang hoạt động' : 'Tạm ngưng'}
           </Tag>
           <Switch 
             size="small" 
@@ -224,8 +252,18 @@ const SpecialtyManage = () => {
       width: 180,
       align: 'center',
       render: (_, record) => (
-        <Space size="middle">
-          <Button type="primary" icon={<EditOutlined />} size="small" onClick={() => showModal(record)}>
+        <Space size="small">
+          <Button 
+            type="text"
+            icon={<EditOutlined style={{ color: '#1677ff' }} />} 
+            onClick={() => showModal(record)}
+            style={{ 
+              backgroundColor: 'rgba(22, 119, 255, 0.08)',
+              borderRadius: '6px',
+              fontWeight: 500,
+              color: '#1677ff'
+            }}
+          >
             Sửa
           </Button>
           {record.isActive ? (
@@ -234,15 +272,32 @@ const SpecialtyManage = () => {
               onConfirm={() => handleDelete(record.key)}
               okText="Đồng ý"
               cancelText="Hủy"
+              placement="topRight"
             >
-              <Button danger icon={<EyeInvisibleOutlined />} size="small">Tạm ẩn</Button>
+              <Button 
+                type="text" 
+                danger
+                icon={<EyeInvisibleOutlined />} 
+                style={{ 
+                  backgroundColor: 'rgba(255, 77, 79, 0.08)',
+                  borderRadius: '6px',
+                  fontWeight: 500
+                }}
+              >
+                Ẩn
+              </Button>
             </Popconfirm>
           ) : (
             <Button 
-              type="dashed" 
-              icon={<EyeOutlined />} 
-              size="small" 
+              type="text"
+              icon={<EyeOutlined style={{ color: '#52c41a' }} />} 
               onClick={() => handleToggleStatus(record)}
+              style={{ 
+                backgroundColor: 'rgba(82, 196, 26, 0.08)',
+                borderRadius: '6px',
+                fontWeight: 500,
+                color: '#52c41a'
+              }}
             >
               Mở lại
             </Button>
@@ -253,48 +308,80 @@ const SpecialtyManage = () => {
   ];
 
   return (
-    <>
+    <div style={{ padding: '4px' }}>
       <Card 
-        title={<span style={{ fontSize: 18, fontWeight: 700 }}>🏥 Quản lý Chuyên khoa</span>} 
+        className="glass-card"
+        title={
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span style={{ fontSize: '22px' }}>🏥</span>
+            <span className="gradient-text" style={{ fontSize: '20px', letterSpacing: '-0.3px' }}>
+              Danh mục Chuyên khoa
+            </span>
+          </div>
+        } 
         extra={
-          <Button type="primary" icon={<PlusOutlined />} onClick={() => showModal()} style={{ borderRadius: 6 }}>
-            Thêm chuyên khoa
+          <Button 
+            type="primary" 
+            icon={<PlusOutlined />} 
+            onClick={() => showModal()} 
+            className="gradient-button"
+          >
+            Thêm chuyên khoa mới
           </Button>
         }
-        style={{ borderRadius: 12, boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}
       >
-        <Table dataSource={dataSource} columns={columns} loading={loading} style={{ marginTop: 10 }} />
+        <Table 
+          dataSource={dataSource} 
+          columns={columns} 
+          loading={loading} 
+          pagination={{ pageSize: 8 }}
+          style={{ marginTop: 8 }} 
+        />
       </Card>
 
       <Modal
-        title={editingId ? "✏️ Sửa chuyên khoa" : "🆕 Thêm chuyên khoa mới"}
+        title={
+          <div style={{ paddingBottom: '10px', borderBottom: '1px solid #f1f5f9' }}>
+            <span style={{ fontSize: '18px', fontWeight: 700, color: '#1e293b' }}>
+              {editingId ? "✏️ Cập nhật Chuyên khoa" : "🆕 Thêm chuyên khoa mới"}
+            </span>
+          </div>
+        }
         open={isModalOpen}
         onCancel={handleCancel}
         footer={null}
         destroyOnClose
         style={{ top: 80 }}
+        width={500}
       >
-        <Form layout="vertical" form={form} onFinish={handleFinish} style={{ marginTop: 15 }}>
+        <Form layout="vertical" form={form} onFinish={handleFinish} style={{ marginTop: 20 }}>
           <Form.Item
             name="name"
-            label={<span style={{ fontWeight: 500 }}>Tên chuyên khoa</span>}
+            label={<span style={{ fontWeight: 600, color: '#475569' }}>Tên chuyên khoa</span>}
             rules={[{ required: true, message: 'Vui lòng nhập tên chuyên khoa!' }]}
           >
-            <Input placeholder="VD: Tim mạch, Nhi khoa, Tai Mũi Họng..." style={{ borderRadius: 6 }} />
+            <Input 
+              placeholder="VD: Tim mạch, Nhi khoa, Răng Hàm Mặt..." 
+              className="premium-input" 
+            />
           </Form.Item>
 
           <Form.Item
             name="description"
-            label={<span style={{ fontWeight: 500 }}>Mô tả</span>}
+            label={<span style={{ fontWeight: 600, color: '#475569' }}>Mô tả chi tiết</span>}
           >
-            <Input.TextArea rows={4} placeholder="Mô tả chi tiết về chuyên khoa và phạm vi điều trị..." style={{ borderRadius: 6 }} />
+            <Input.TextArea 
+              rows={4} 
+              placeholder="Nhập giới thiệu chi tiết về chuyên khoa y tế này..." 
+              className="premium-textarea" 
+            />
           </Form.Item>
 
           <Form.Item
             name="icon"
-            label={<span style={{ fontWeight: 500 }}>Ảnh biểu tượng (Icon)</span>}
+            label={<span style={{ fontWeight: 600, color: '#475569' }}>Ảnh đại diện biểu tượng (Icon)</span>}
           >
-            <Space direction="vertical" style={{ width: '100%' }}>
+            <Space direction="vertical" style={{ width: '100%' }} size="middle">
               <Upload
                 listType="picture-card"
                 maxCount={1}
@@ -305,17 +392,19 @@ const SpecialtyManage = () => {
                   setFileList([]);
                   form.setFieldValue('icon', '');
                 }}
+                style={{ marginTop: '5px' }}
               >
                 {fileList.length < 1 && (
-                  <div>
-                    <PlusOutlined />
-                    <div style={{ marginTop: 8 }}>Tải ảnh lên</div>
+                  <div style={{ color: '#64748b' }}>
+                    <PlusOutlined style={{ fontSize: '20px', color: '#1677ff' }} />
+                    <div style={{ marginTop: 8, fontWeight: 500 }}>Tải ảnh lên</div>
                   </div>
                 )}
               </Upload>
               <Input 
-                placeholder="Hoặc nhập liên kết URL ảnh trực tiếp..." 
+                placeholder="Hoặc dán địa chỉ URL hình ảnh biểu tượng vào đây..." 
                 value={form.getFieldValue('icon')}
+                className="premium-input"
                 onChange={(e) => {
                   form.setFieldValue('icon', e.target.value);
                   if (e.target.value) {
@@ -331,22 +420,36 @@ const SpecialtyManage = () => {
                     setFileList([]);
                   }
                 }}
-                style={{ borderRadius: 6 }}
               />
             </Space>
           </Form.Item>
 
-          <Form.Item className="mb-0 text-right" style={{ marginTop: 25 }}>
-            <Space>
-              <Button onClick={handleCancel} style={{ borderRadius: 6 }}>Hủy</Button>
-              <Button type="primary" htmlType="submit" loading={uploading} style={{ borderRadius: 6 }}>
-                {editingId ? "Lưu thay đổi" : "Thêm mới"}
+          <Form.Item className="mb-0 text-right" style={{ marginTop: 30, borderTop: '1px solid #f1f5f9', paddingTop: '15px' }}>
+            <Space size="middle">
+              <Button 
+                onClick={handleCancel} 
+                style={{ 
+                  borderRadius: '8px', 
+                  fontWeight: 600, 
+                  height: '38px',
+                  color: '#64748b'
+                }}
+              >
+                Hủy bỏ
+              </Button>
+              <Button 
+                type="primary" 
+                htmlType="submit" 
+                loading={uploading || loading} 
+                className="gradient-button"
+              >
+                {editingId ? "Cập nhật" : "Tạo mới"}
               </Button>
             </Space>
           </Form.Item>
         </Form>
       </Modal>
-    </>
+    </div>
   );
 };
 
