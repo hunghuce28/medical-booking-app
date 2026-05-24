@@ -15,6 +15,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { Image } from 'expo-image';
 import api from '../../services/api';
 import Colors from '../../constants/colors';
 
@@ -87,35 +88,52 @@ export default function DoctorDetailScreen() {
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-        {/* Doctor Info Card */}
+        {/* Doctor Profile Card */}
         <View style={styles.profileCard}>
           <View style={styles.avatarContainer}>
-            <Text style={styles.avatarText}>
-              {doctor.user?.fullName?.charAt(0) || '?'}
-            </Text>
+            {doctor.user?.avatar ? (
+              <Image
+                source={{ uri: doctor.user.avatar }}
+                style={{ width: '100%', height: '100%', borderRadius: 50 }}
+                contentFit="cover"
+              />
+            ) : (
+              <Text style={styles.avatarText}>
+                {doctor.user?.fullName?.charAt(0) || '?'}
+              </Text>
+            )}
           </View>
           <Text style={styles.doctorName}>{doctor.user?.fullName}</Text>
-          <Text style={styles.doctorSpecialty}>
-            Chuyên khoa: {doctor.specialty?.name}
-          </Text>
-          <Text style={styles.doctorDegree}>{doctor.degree || 'Bác sĩ chuyên khoa'}</Text>
           
-          {/* Stats */}
+          <View style={styles.specialtyTag}>
+            <Ionicons name="medical" size={14} color={Colors.primary} style={{ marginRight: 6 }} />
+            <Text style={styles.doctorSpecialty}>{doctor.specialty?.name}</Text>
+          </View>
+
+          <Text style={styles.doctorDegree}>{doctor.degree || 'Bác sĩ chuyên khoa y tế'}</Text>
+          
+          {/* Stats Section */}
           <View style={styles.statsRow}>
             <View style={styles.statBox}>
-              <Ionicons name="star" size={20} color={Colors.accent} />
+              <View style={styles.statIconBox}>
+                <Ionicons name="star" size={18} color={Colors.accent} />
+              </View>
               <Text style={styles.statValue}>{doctor.rating?.toFixed(1) || '5.0'}</Text>
               <Text style={styles.statLabel}>Đánh giá</Text>
             </View>
             <View style={styles.statDivider} />
             <View style={styles.statBox}>
-              <Ionicons name="ribbon" size={20} color={Colors.primary} />
+              <View style={styles.statIconBox}>
+                <Ionicons name="ribbon-outline" size={18} color={Colors.primary} />
+              </View>
               <Text style={styles.statValue}>{doctor.experienceYears} năm</Text>
               <Text style={styles.statLabel}>Kinh nghiệm</Text>
             </View>
             <View style={styles.statDivider} />
             <View style={styles.statBox}>
-              <Ionicons name="people" size={20} color="#4ECDC4" />
+              <View style={styles.statIconBox}>
+                <Ionicons name="people-outline" size={18} color="#0D9488" />
+              </View>
               <Text style={styles.statValue}>{doctor.totalReviews || '0'}+</Text>
               <Text style={styles.statLabel}>Bệnh nhân</Text>
             </View>
@@ -124,14 +142,14 @@ export default function DoctorDetailScreen() {
 
         {/* Biography */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Giới thiệu</Text>
+          <Text style={styles.sectionTitle}>👨‍⚕️ Giới thiệu bác sĩ</Text>
           <Text style={styles.bioText}>
             {doctor.description ||
-              `Bác sĩ ${doctor.user?.fullName} là một chuyên gia có nhiều năm kinh nghiệm trong lĩnh vực ${doctor.specialty?.name}. Bác sĩ luôn tận tâm, chu đáo và hết lòng vì sức khỏe của bệnh nhân.`}
+              `Bác sĩ ${doctor.user?.fullName} là một chuyên gia uy tín với nhiều năm kinh nghiệm thực tiễn và nghiên cứu chuyên sâu trong lĩnh vực ${doctor.specialty?.name}. Bác sĩ luôn tâm niệm đặt y đức lên hàng đầu, hết lòng chăm sóc chu đáo cho sức khỏe của bệnh nhân.`}
           </Text>
         </View>
 
-        {/* Pricing & Time Info */}
+        {/* Pricing Info */}
         <View style={styles.priceSection}>
           <View style={styles.priceRow}>
             <View>
@@ -141,17 +159,17 @@ export default function DoctorDetailScreen() {
               </Text>
             </View>
             <View style={styles.badge}>
-              <Text style={styles.badgeText}>Giá gốc</Text>
+              <Text style={styles.badgeText}>Giá niêm yết</Text>
             </View>
           </View>
         </View>
       </ScrollView>
 
-      {/* Booking Button */}
+      {/* Booking Button Footer */}
       <View style={styles.footer}>
         <TouchableOpacity style={styles.bookingBtn} onPress={handleBooking}>
-          <Ionicons name="calendar-outline" size={20} color={Colors.white} style={{ marginRight: 8 }} />
-          <Text style={styles.bookingBtnText}>Đặt lịch khám ngay</Text>
+          <Ionicons name="calendar-outline" size={22} color={Colors.white} style={{ marginRight: 8 }} />
+          <Text style={styles.bookingBtnText}>Đặt lịch hẹn ngay</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -174,10 +192,10 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 20,
-    paddingVertical: 12,
+    paddingVertical: 14,
     backgroundColor: Colors.white,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
+    borderBottomColor: Colors.borderLight,
   },
   backBtn: {
     width: 40,
@@ -187,63 +205,74 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 18,
-    fontWeight: '700',
+    fontWeight: '800',
     color: Colors.textPrimary,
+    letterSpacing: -0.3,
   },
   scrollContent: {
-    paddingBottom: 100,
+    paddingBottom: 110,
   },
   profileCard: {
     alignItems: 'center',
     backgroundColor: Colors.white,
-    paddingVertical: 28,
+    paddingVertical: 32,
     paddingHorizontal: 20,
-    borderBottomLeftRadius: 32,
-    borderBottomRightRadius: 32,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 10,
-    elevation: 2,
+    borderBottomLeftRadius: 36,
+    borderBottomRightRadius: 36,
+    shadowColor: Colors.shadow,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.15,
+    shadowRadius: 16,
+    elevation: 3,
     marginBottom: 20,
   },
   avatarContainer: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
+    width: 108,
+    height: 108,
+    borderRadius: 54,
     backgroundColor: Colors.primaryBg,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 16,
-    borderWidth: 3,
+    marginBottom: 18,
+    borderWidth: 4,
     borderColor: Colors.white,
     shadowColor: Colors.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.25,
+    shadowRadius: 12,
+    elevation: 4,
   },
   avatarText: {
-    fontSize: 36,
-    fontWeight: '700',
+    fontSize: 40,
+    fontWeight: '800',
     color: Colors.primary,
   },
   doctorName: {
-    fontSize: 22,
-    fontWeight: '700',
+    fontSize: 23,
+    fontWeight: '800',
     color: Colors.textPrimary,
+    marginBottom: 8,
+    letterSpacing: -0.5,
+  },
+  specialtyTag: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.primaryBg,
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 12,
     marginBottom: 6,
   },
   doctorSpecialty: {
-    fontSize: 14,
-    color: Colors.textSecondary,
-    fontWeight: '600',
-    marginBottom: 4,
+    fontSize: 13,
+    color: Colors.primary,
+    fontWeight: '700',
   },
   doctorDegree: {
     fontSize: 13,
+    fontWeight: '500',
     color: Colors.textTertiary,
-    marginBottom: 24,
+    marginBottom: 26,
   },
   statsRow: {
     flexDirection: 'row',
@@ -251,57 +280,85 @@ const styles = StyleSheet.create({
     justifyContent: 'space-around',
     width: '100%',
     backgroundColor: Colors.background,
-    borderRadius: 16,
-    paddingVertical: 14,
+    borderRadius: 22,
+    paddingVertical: 16,
+    borderWidth: 1,
+    borderColor: Colors.borderLight,
   },
   statBox: {
     alignItems: 'center',
     flex: 1,
   },
+  statIconBox: {
+    width: 36,
+    height: 36,
+    borderRadius: 12,
+    backgroundColor: Colors.white,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: Colors.shadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 1,
+  },
   statValue: {
     fontSize: 16,
-    fontWeight: '700',
+    fontWeight: '800',
     color: Colors.textPrimary,
-    marginTop: 6,
+    marginTop: 8,
     marginBottom: 2,
   },
   statLabel: {
     fontSize: 11,
+    fontWeight: '600',
     color: Colors.textTertiary,
   },
   statDivider: {
     width: 1,
-    height: 30,
+    height: 32,
     backgroundColor: Colors.border,
   },
   section: {
     backgroundColor: Colors.white,
-    borderRadius: 20,
+    borderRadius: 24,
     padding: 20,
     marginHorizontal: 20,
     marginBottom: 20,
     borderWidth: 1,
     borderColor: Colors.borderLight,
+    shadowColor: Colors.shadow,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 1,
   },
   sectionTitle: {
     fontSize: 16,
-    fontWeight: '700',
+    fontWeight: '800',
     color: Colors.textPrimary,
     marginBottom: 12,
+    letterSpacing: -0.3,
   },
   bioText: {
     fontSize: 14,
     color: Colors.textSecondary,
+    fontWeight: '500',
     lineHeight: 22,
   },
   priceSection: {
     backgroundColor: Colors.white,
-    borderRadius: 20,
+    borderRadius: 24,
     padding: 20,
     marginHorizontal: 20,
     marginBottom: 20,
     borderWidth: 1,
     borderColor: Colors.borderLight,
+    shadowColor: Colors.shadow,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 1,
   },
   priceRow: {
     flexDirection: 'row',
@@ -310,24 +367,25 @@ const styles = StyleSheet.create({
   },
   priceLabel: {
     fontSize: 13,
+    fontWeight: '500',
     color: Colors.textSecondary,
     marginBottom: 4,
   },
   priceAmount: {
-    fontSize: 20,
-    fontWeight: '700',
+    fontSize: 22,
+    fontWeight: '800',
     color: Colors.primary,
   },
   badge: {
-    backgroundColor: '#FFE3E3',
+    backgroundColor: 'rgba(37, 99, 235, 0.1)',
     paddingHorizontal: 12,
     paddingVertical: 6,
-    borderRadius: 8,
+    borderRadius: 10,
   },
   badgeText: {
     fontSize: 12,
     color: Colors.primary,
-    fontWeight: '600',
+    fontWeight: '700',
   },
   footer: {
     position: 'absolute',
@@ -336,27 +394,27 @@ const styles = StyleSheet.create({
     right: 0,
     backgroundColor: Colors.white,
     paddingHorizontal: 20,
-    paddingVertical: 16,
+    paddingVertical: 18,
     borderTopWidth: 1,
-    borderTopColor: Colors.border,
+    borderTopColor: Colors.borderLight,
   },
   bookingBtn: {
     backgroundColor: Colors.primary,
-    borderRadius: 16,
+    borderRadius: 18,
     paddingVertical: 16,
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
     shadowColor: Colors.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    elevation: 4,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.25,
+    shadowRadius: 12,
+    elevation: 5,
   },
   bookingBtnText: {
     color: Colors.white,
     fontSize: 16,
-    fontWeight: '700',
+    fontWeight: '800',
   },
   emptyContainer: {
     flex: 1,

@@ -16,6 +16,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { Image } from 'expo-image';
 import useAuthStore from '../../stores/authStore';
 import api from '../../services/api';
 import Colors from '../../constants/colors';
@@ -73,11 +74,11 @@ export default function HomeScreen() {
         {/* Header */}
         <View style={styles.header}>
           <View>
-            <Text style={styles.greeting}>Xin chào</Text>
+            <Text style={styles.greeting}>Xin chào 👋</Text>
             <Text style={styles.userName}>{user?.fullName || 'Bệnh nhân'}</Text>
           </View>
-          <TouchableOpacity style={styles.notifButton}>
-            <Ionicons name="notifications-outline" size={20} color={Colors.textPrimary} />
+          <TouchableOpacity style={styles.notifButton} onPress={() => router.push('/notifications')}>
+            <Ionicons name="notifications-outline" size={22} color={Colors.primary} />
           </TouchableOpacity>
         </View>
 
@@ -86,17 +87,19 @@ export default function HomeScreen() {
           <View style={styles.bannerContent}>
             <Text style={styles.bannerTitle}>Đặt lịch khám bệnh{'\n'}dễ dàng & nhanh chóng</Text>
             <Text style={styles.bannerSubtitle}>
-              Chọn bác sĩ chuyên khoa phù hợp{'\n'}và đặt lịch chỉ trong vài bước
+              Chọn bác sĩ chuyên khoa phù hợp và đặt lịch chỉ trong vài bước đơn giản.
             </Text>
           </View>
-          <Ionicons name="medical" size={48} color={Colors.white} style={{ opacity: 0.8, marginLeft: 8 }} />
+          <View style={styles.bannerIconBox}>
+            <Ionicons name="pulse" size={36} color={Colors.white} />
+          </View>
         </View>
 
         {/* Chuyên khoa */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Chuyên khoa</Text>
-            <TouchableOpacity>
+            <Text style={styles.sectionTitle}>Chuyên khoa y tế</Text>
+            <TouchableOpacity onPress={() => router.push('/booking')}>
               <Text style={styles.seeAll}>Xem tất cả</Text>
             </TouchableOpacity>
           </View>
@@ -107,9 +110,20 @@ export default function HomeScreen() {
             contentContainerStyle={styles.specialtyList}
             keyExtractor={(item) => item.id.toString()}
             renderItem={({ item }) => (
-              <TouchableOpacity style={styles.specialtyCard}>
-                <View style={[styles.specialtyIconBox]}>
-                  <Ionicons name="medical-outline" size={24} color={Colors.primary} />
+              <TouchableOpacity 
+                style={styles.specialtyCard}
+                onPress={() => router.push({ pathname: '/booking', params: { specialtyId: item.id } })}
+              >
+                <View style={styles.specialtyIconBox}>
+                  {item.icon ? (
+                    <Image
+                      source={{ uri: item.icon }}
+                      style={{ width: '100%', height: '100%', borderRadius: 12 }}
+                      contentFit="cover"
+                    />
+                  ) : (
+                    <Ionicons name="medical-outline" size={24} color={Colors.primary} />
+                  )}
                 </View>
                 <Text style={styles.specialtyName} numberOfLines={2}>
                   {item.name}
@@ -123,7 +137,7 @@ export default function HomeScreen() {
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Bác sĩ nổi bật</Text>
-            <TouchableOpacity>
+            <TouchableOpacity onPress={() => router.push('/booking')}>
               <Text style={styles.seeAll}>Xem tất cả</Text>
             </TouchableOpacity>
           </View>
@@ -134,21 +148,33 @@ export default function HomeScreen() {
               onPress={() => router.push(`/doctor/${doctor.id}`)}
             >
               <View style={styles.doctorAvatar}>
-                <Text style={styles.doctorAvatarText}>
-                  {doctor.user?.fullName?.charAt(0) || '?'}
-                </Text>
+                {doctor.user?.avatar ? (
+                  <Image
+                    source={{ uri: doctor.user.avatar }}
+                    style={{ width: '100%', height: '100%', borderRadius: 16 }}
+                    contentFit="cover"
+                  />
+                ) : (
+                  <Text style={styles.doctorAvatarText}>
+                    {doctor.user?.fullName?.charAt(0) || '?'}
+                  </Text>
+                )}
               </View>
               <View style={styles.doctorInfo}>
                 <Text style={styles.doctorName}>{doctor.user?.fullName}</Text>
                 <Text style={styles.doctorSpecialty}>
-                  <Ionicons name="medical" size={12} color={Colors.textSecondary} /> {doctor.specialty?.name}
+                  <Ionicons name="medical" size={12} color={Colors.primary} /> {doctor.specialty?.name}
                 </Text>
                 <View style={styles.doctorMeta}>
-                  <Text style={styles.doctorRating}><Ionicons name="star" size={12} color={Colors.accent} /> {doctor.rating?.toFixed(1)}</Text>
+                  <View style={styles.ratingBadge}>
+                    <Ionicons name="star" size={11} color={Colors.accent} />
+                    <Text style={styles.doctorRating}> {doctor.rating?.toFixed(1) || '5.0'}</Text>
+                  </View>
                   <Text style={styles.doctorExp}>{doctor.experienceYears} năm KN</Text>
                 </View>
               </View>
               <View style={styles.doctorFee}>
+                <Text style={styles.feeLabel}>Phí khám</Text>
                 <Text style={styles.feeAmount}>
                   {Number(doctor.consultationFee).toLocaleString('vi-VN')}đ
                 </Text>
@@ -179,62 +205,79 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 20,
-    paddingVertical: 16,
+    paddingVertical: 18,
   },
   greeting: {
-    fontSize: 14,
+    fontSize: 13,
+    fontWeight: '500',
     color: Colors.textSecondary,
   },
   userName: {
     fontSize: 22,
-    fontWeight: '700',
+    fontWeight: '800',
     color: Colors.textPrimary,
     marginTop: 2,
+    letterSpacing: -0.5,
   },
   notifButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
+    width: 46,
+    height: 46,
+    borderRadius: 14,
     backgroundColor: Colors.white,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  notifIcon: {
-    fontSize: 20,
+    borderColor: Colors.borderLight,
+    shadowColor: Colors.shadow,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 2,
   },
   banner: {
     marginHorizontal: 20,
-    backgroundColor: Colors.primary,
-    borderRadius: 20,
+    backgroundColor: '#2563EB',
+    borderRadius: 24,
     padding: 24,
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 24,
+    marginBottom: 26,
+    position: 'relative',
     overflow: 'hidden',
+    shadowColor: '#2563EB',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.2,
+    shadowRadius: 16,
+    elevation: 6,
   },
   bannerContent: {
     flex: 1,
+    zIndex: 2,
   },
   bannerTitle: {
-    fontSize: 18,
-    fontWeight: '700',
+    fontSize: 19,
+    fontWeight: '800',
     color: Colors.white,
     lineHeight: 26,
     marginBottom: 8,
+    letterSpacing: -0.3,
   },
   bannerSubtitle: {
-    fontSize: 13,
-    color: Colors.white + 'CC',
-    lineHeight: 20,
+    fontSize: 12,
+    color: 'rgba(255, 255, 255, 0.85)',
+    lineHeight: 18,
   },
-  bannerEmoji: {
-    fontSize: 64,
-    marginLeft: 8,
+  bannerIconBox: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: 12,
   },
   section: {
-    marginBottom: 24,
+    marginBottom: 26,
   },
   sectionHeader: {
     flexDirection: 'row',
@@ -245,13 +288,14 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 18,
-    fontWeight: '700',
+    fontWeight: '800',
     color: Colors.textPrimary,
+    letterSpacing: -0.3,
   },
   seeAll: {
     fontSize: 14,
     color: Colors.primary,
-    fontWeight: '500',
+    fontWeight: '600',
   },
   specialtyList: {
     paddingLeft: 20,
@@ -259,32 +303,32 @@ const styles = StyleSheet.create({
   },
   specialtyCard: {
     backgroundColor: Colors.white,
-    borderRadius: 16,
-    paddingVertical: 16,
+    borderRadius: 20,
+    paddingVertical: 18,
     paddingHorizontal: 12,
-    marginRight: 12,
+    marginRight: 14,
     alignItems: 'center',
-    width: 90,
+    width: 96,
     borderWidth: 1,
     borderColor: Colors.borderLight,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
-    shadowRadius: 4,
-    elevation: 1,
+    shadowColor: Colors.shadow,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 10,
+    elevation: 2,
   },
   specialtyIconBox: {
-    width: 48,
-    height: 48,
+    width: 52,
+    height: 52,
     borderRadius: 16,
     backgroundColor: Colors.primaryBg,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: 10,
   },
   specialtyName: {
     fontSize: 12,
-    fontWeight: '600',
+    fontWeight: '700',
     color: Colors.textPrimary,
     textAlign: 'center',
     lineHeight: 16,
@@ -293,66 +337,86 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: Colors.white,
-    borderRadius: 16,
+    borderRadius: 22,
     padding: 16,
     marginHorizontal: 20,
-    marginBottom: 12,
+    marginBottom: 14,
     borderWidth: 1,
     borderColor: Colors.borderLight,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
-    shadowRadius: 4,
-    elevation: 1,
+    shadowColor: Colors.shadow,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.25,
+    shadowRadius: 12,
+    elevation: 3,
   },
   doctorAvatar: {
-    width: 52,
-    height: 52,
-    borderRadius: 16,
+    width: 60,
+    height: 60,
+    borderRadius: 18,
     backgroundColor: Colors.primaryBg,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 14,
+    borderWidth: 1,
+    borderColor: Colors.borderLight,
   },
   doctorAvatarText: {
-    fontSize: 20,
-    fontWeight: '700',
+    fontSize: 22,
+    fontWeight: '800',
     color: Colors.primary,
   },
   doctorInfo: {
     flex: 1,
   },
   doctorName: {
-    fontSize: 15,
-    fontWeight: '600',
+    fontSize: 16,
+    fontWeight: '750',
     color: Colors.textPrimary,
     marginBottom: 4,
+    letterSpacing: -0.3,
   },
   doctorSpecialty: {
     fontSize: 13,
     color: Colors.textSecondary,
-    marginBottom: 4,
+    fontWeight: '600',
+    marginBottom: 6,
   },
   doctorMeta: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: 10,
+  },
+  ratingBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.warningBg,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8,
   },
   doctorRating: {
-    fontSize: 13,
+    fontSize: 12,
     color: Colors.accent,
-    fontWeight: '500',
+    fontWeight: '700',
   },
   doctorExp: {
     fontSize: 12,
+    fontWeight: '500',
     color: Colors.textTertiary,
   },
   doctorFee: {
     alignItems: 'flex-end',
+    justifyContent: 'center',
+  },
+  feeLabel: {
+    fontSize: 10,
+    color: Colors.textTertiary,
+    fontWeight: '500',
+    marginBottom: 2,
   },
   feeAmount: {
     fontSize: 14,
-    fontWeight: '700',
+    fontWeight: '800',
     color: Colors.primary,
   },
 });
