@@ -113,9 +113,6 @@ medical_appointment_booking/
 Dự án đã được tích hợp và nâng cấp các giải pháp công nghệ thời thượng nhất:
 *   **Đẩy thông báo thời gian thực (Realtime Notifications)**: Sử dụng **Socket.io** liên kết từ backend đến cả Web Admin và Mobile App. Các room được phân tách theo `user:${userId}` bảo mật, giúp thông báo chuyển trạng thái lịch khám hiển thị lập tức không cần tải lại trang.
 *   **Phân quyền & Bảo mật Web Admin (Role-based Guard)**: Chặn hoàn toàn vai trò Bệnh nhân (`PATIENT`) đăng nhập trên Web. Tự động ẩn các menu đặc quyền và bảo vệ Router (`RoleRoute` guard) chặn Bác sĩ (`DOCTOR`) truy cập vào các trang quản lý của `ADMIN`.
-*   **Healthcare Premium UI/UX**: 
-    *   *Web Admin*: Thiết kế kính mờ **Glassmorphism**, biểu đồ xu hướng khám **Recharts** mượt mà, màu chuyển sắc **Gradients** bắt mắt và micro-animations Avatar xoay 3D sinh động khi di chuột.
-    *   *Mobile App*: Tích hợp **expo-image** tối ưu hóa bộ nhớ đệm, hiển thị ảnh icon chuyên khoa và avatar bác sĩ thực tế thay thế chữ cái đầu đơn điệu.
 *   **Duy trì phiên đăng nhập (Refresh Token)**: Cơ chế gọi API gia hạn Access Token ngầm chống crash app trên di động.
 
 ---
