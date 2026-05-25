@@ -57,13 +57,15 @@ const AdminLayout = () => {
     };
   }, [token]);
 
-  const menuItems = [
-    { key: '/admin/dashboard', icon: <DashboardOutlined />, label: 'Tổng quan' },
-    { key: '/admin/specialties', icon: <AppstoreOutlined />, label: 'Chuyên khoa' },
-    { key: '/admin/doctors', icon: <TeamOutlined />, label: 'Bác sĩ' },
-    { key: '/admin/patients', icon: <ContactsOutlined />, label: 'Bệnh nhân' },
-    { key: '/admin/appointments', icon: <CalendarOutlined />, label: 'Lịch khám' },
+  const allMenuItems = [
+    { key: '/admin/dashboard', icon: <DashboardOutlined />, label: 'Tổng quan', roles: ['ADMIN', 'DOCTOR'] },
+    { key: '/admin/specialties', icon: <AppstoreOutlined />, label: 'Chuyên khoa', roles: ['ADMIN'] },
+    { key: '/admin/doctors', icon: <TeamOutlined />, label: 'Bác sĩ', roles: ['ADMIN'] },
+    { key: '/admin/patients', icon: <ContactsOutlined />, label: 'Bệnh nhân', roles: ['ADMIN'] },
+    { key: '/admin/appointments', icon: <CalendarOutlined />, label: 'Lịch khám', roles: ['ADMIN', 'DOCTOR'] },
   ];
+
+  const menuItems = allMenuItems.filter(item => item.roles.includes(user?.role));
 
   const handleLogout = () => {
     disconnectSocket(); // Ngắt kết nối socket khi logout

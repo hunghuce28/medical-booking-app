@@ -4,6 +4,7 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 // Layout & Auth
 import AdminLayout from '../components/layout/AdminLayout';
 import PrivateRoute from '../components/auth/PrivateRoute';
+import RoleRoute from '../components/auth/RoleRoute';
 
 // Auth Pages
 import Login from '../pages/auth/Login';
@@ -31,11 +32,27 @@ const AppRouter = () => {
         </PrivateRoute>
       }>
         <Route index element={<Navigate to="/admin/dashboard" replace />} />
+        
+        {/* Route Dashboard và Appointments: Cả ADMIN và DOCTOR đều được vào */}
         <Route path="dashboard" element={<Dashboard />} />
-        <Route path="specialties" element={<SpecialtyManage />} />
-        <Route path="doctors" element={<DoctorManage />} />
-        <Route path="patients" element={<PatientManage />} />
         <Route path="appointments" element={<AppointmentManage />} />
+        
+        {/* Các Route Quản lý đặc quyền: Chỉ cho phép ADMIN truy cập */}
+        <Route path="specialties" element={
+          <RoleRoute allowedRoles={['ADMIN']}>
+            <SpecialtyManage />
+          </RoleRoute>
+        } />
+        <Route path="doctors" element={
+          <RoleRoute allowedRoles={['ADMIN']}>
+            <DoctorManage />
+          </RoleRoute>
+        } />
+        <Route path="patients" element={
+          <RoleRoute allowedRoles={['ADMIN']}>
+            <PatientManage />
+          </RoleRoute>
+        } />
       </Route>
 
       {/* Fallback 404 */}
@@ -45,3 +62,4 @@ const AppRouter = () => {
 };
 
 export default AppRouter;
+

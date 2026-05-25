@@ -18,10 +18,24 @@ const Login = () => {
       const response = await axiosClient.post('/auth/login', values);
       
       if (response.success) {
+        const user = response.data.user;
+        
+        // Chặn bệnh nhân truy cập Web Admin
+        if (user.role === 'PATIENT') {
+          message.error('Tài khoản bệnh nhân không được phép truy cập hệ thống quản trị Web!');
+          return;
+        }
+
         message.success('Đăng nhập thành công!');
         // Lưu vào Zustand (localStorage)
-        login(response.data.user, response.data.accessToken);
-        navigate('/admin/dashboard');
+        login(user, response.data.accessToken);
+        
+        // Điều hướng phù hợp theo vai trò
+        if (user.role === 'DOCTOR') {
+          navigate('/admin/appointments');
+        } else {
+          navigate('/admin/dashboard');
+        }
       } else {
         message.error(response.message || 'Đăng nhập thất bại!');
       }
