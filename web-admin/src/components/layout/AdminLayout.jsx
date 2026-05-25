@@ -87,31 +87,23 @@ const AdminLayout = () => {
 
 
   return (
-    <Layout style={{ minHeight: '100vh', background: 'var(--bg-gradient)' }}>
+    <Layout style={{ minHeight: '100vh' }}>
       <Sider 
         collapsible 
         collapsed={collapsed} 
         onCollapse={(value) => setCollapsed(value)}
-        style={{
-          boxShadow: '4px 0 20px rgba(0,0,0,0.03)',
-          background: '#001529',
-          zIndex: 10
-        }}
       >
         <div style={{ 
-          height: 48, 
-          margin: '16px 12px', 
-          background: 'rgba(255, 255, 255, 0.04)', 
-          borderRadius: '10px', 
-          display: 'flex', 
-          alignItems: 'center', 
-          justifyContent: 'center', 
-          border: '1px solid rgba(255, 255, 255, 0.08)',
-          transition: 'all 0.3s'
+          height: 32, 
+          margin: 16, 
+          background: 'rgba(255, 255, 255, 0.2)',
+          color: '#fff',
+          textAlign: 'center',
+          lineHeight: '32px',
+          fontWeight: 'bold',
+          fontSize: '16px'
         }}>
-          <span className="gradient-text" style={{ fontSize: collapsed ? '18px' : '17px', fontWeight: 850, fontFamily: 'Outfit, sans-serif', letterSpacing: '0.5px' }}>
-            {collapsed ? '🏥' : '🏥 MEDBOOK'}
-          </span>
+          {collapsed ? 'Med' : 'MedAdmin'}
         </div>
         <Menu 
           theme="dark" 
@@ -119,39 +111,30 @@ const AdminLayout = () => {
           selectedKeys={[location.pathname]} 
           items={menuItems} 
           onClick={({ key }) => navigate(key)}
-          style={{ 
-            marginTop: 15,
-            padding: '0 8px',
-            border: 'none'
-          }}
-          className="sidebar-menu"
         />
       </Sider>
-      <Layout style={{ background: 'transparent' }}>
+      <Layout>
         <Header style={{ 
           padding: '0 24px', 
-          background: 'rgba(255, 255, 255, 0.8)', 
-          backdropFilter: 'blur(10px)',
+          background: colorBgContainer, 
           display: 'flex', 
           justifyContent: 'flex-end', 
           alignItems: 'center',
-          boxShadow: '0 2px 10px rgba(22, 119, 255, 0.03)',
-          borderBottom: '1px solid rgba(22, 119, 255, 0.05)',
           height: '64px'
         }}>
           <Dropdown menu={{ items: userMenuItems }} placement="bottomRight">
-            <Space style={{ cursor: 'pointer', padding: '6px 14px', borderRadius: '8px', background: 'rgba(22, 119, 255, 0.04)', border: '1px solid rgba(22, 119, 255, 0.06)', transition: 'all 0.2s' }} className="hover-scale">
-              <Avatar icon={<UserOutlined />} style={{ backgroundColor: '#1677ff' }} className="avatar-glow" />
-              <span style={{ fontWeight: 600, color: '#334155', fontSize: '14px' }}>{user?.fullName || 'Quản trị viên'}</span>
+            <Space style={{ cursor: 'pointer' }}>
+              <Avatar icon={<UserOutlined />} />
+              <span>{user?.fullName || 'Quản trị viên'}</span>
             </Space>
           </Dropdown>
         </Header>
         <Content style={{ 
-          margin: '24px 20px', 
-          padding: 0, 
+          margin: '24px 16px', 
+          padding: 24, 
           minHeight: 280, 
-          background: 'transparent', 
-          borderRadius: '16px' 
+          background: colorBgContainer,
+          borderRadius: borderRadiusLG
         }}>
           <Outlet />
         </Content>

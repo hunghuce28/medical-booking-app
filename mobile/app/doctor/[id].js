@@ -15,7 +15,6 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { Image } from 'expo-image';
 import api from '../../services/api';
 import Colors from '../../constants/colors';
 
@@ -91,17 +90,9 @@ export default function DoctorDetailScreen() {
         {/* Doctor Profile Card */}
         <View style={styles.profileCard}>
           <View style={styles.avatarContainer}>
-            {doctor.user?.avatar ? (
-              <Image
-                source={{ uri: doctor.user.avatar }}
-                style={{ width: '100%', height: '100%', borderRadius: 50 }}
-                contentFit="cover"
-              />
-            ) : (
-              <Text style={styles.avatarText}>
-                {doctor.user?.fullName?.charAt(0) || '?'}
-              </Text>
-            )}
+            <Text style={styles.avatarText}>
+              {doctor.user?.fullName?.charAt(0) || '?'}
+            </Text>
           </View>
           <Text style={styles.doctorName}>{doctor.user?.fullName}</Text>
           
@@ -205,9 +196,8 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 18,
-    fontWeight: '800',
+    fontWeight: '700',
     color: Colors.textPrimary,
-    letterSpacing: -0.3,
   },
   scrollContent: {
     paddingBottom: 110,
@@ -215,52 +205,43 @@ const styles = StyleSheet.create({
   profileCard: {
     alignItems: 'center',
     backgroundColor: Colors.white,
-    paddingVertical: 32,
+    paddingVertical: 24,
     paddingHorizontal: 20,
-    borderBottomLeftRadius: 36,
-    borderBottomRightRadius: 36,
-    shadowColor: Colors.shadow,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.15,
-    shadowRadius: 16,
-    elevation: 3,
-    marginBottom: 20,
+    borderBottomLeftRadius: 12,
+    borderBottomRightRadius: 12,
+    borderWidth: 1,
+    borderColor: Colors.borderLight,
+    marginBottom: 16,
   },
   avatarContainer: {
-    width: 108,
-    height: 108,
-    borderRadius: 54,
+    width: 80,
+    height: 80,
+    borderRadius: 40,
     backgroundColor: Colors.primaryBg,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 18,
-    borderWidth: 4,
-    borderColor: Colors.white,
-    shadowColor: Colors.primary,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.25,
-    shadowRadius: 12,
-    elevation: 4,
+    marginBottom: 12,
+    borderWidth: 2,
+    borderColor: Colors.borderLight,
   },
   avatarText: {
-    fontSize: 40,
-    fontWeight: '800',
+    fontSize: 32,
+    fontWeight: '700',
     color: Colors.primary,
   },
   doctorName: {
-    fontSize: 23,
-    fontWeight: '800',
+    fontSize: 20,
+    fontWeight: '700',
     color: Colors.textPrimary,
-    marginBottom: 8,
-    letterSpacing: -0.5,
+    marginBottom: 6,
   },
   specialtyTag: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: Colors.primaryBg,
-    paddingHorizontal: 12,
+    paddingHorizontal: 10,
     paddingVertical: 4,
-    borderRadius: 12,
+    borderRadius: 8,
     marginBottom: 6,
   },
   doctorSpecialty: {
@@ -272,7 +253,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '500',
     color: Colors.textTertiary,
-    marginBottom: 26,
+    marginBottom: 20,
   },
   statsRow: {
     flexDirection: 'row',
@@ -280,8 +261,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-around',
     width: '100%',
     backgroundColor: Colors.background,
-    borderRadius: 22,
-    paddingVertical: 16,
+    borderRadius: 12,
+    paddingVertical: 12,
     borderWidth: 1,
     borderColor: Colors.borderLight,
   },
@@ -290,23 +271,20 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   statIconBox: {
-    width: 36,
-    height: 36,
-    borderRadius: 12,
+    width: 32,
+    height: 32,
+    borderRadius: 8,
     backgroundColor: Colors.white,
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: Colors.shadow,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 1,
+    borderWidth: 1,
+    borderColor: Colors.borderLight,
   },
   statValue: {
-    fontSize: 16,
-    fontWeight: '800',
+    fontSize: 15,
+    fontWeight: '700',
     color: Colors.textPrimary,
-    marginTop: 8,
+    marginTop: 6,
     marginBottom: 2,
   },
   statLabel: {
@@ -321,24 +299,18 @@ const styles = StyleSheet.create({
   },
   section: {
     backgroundColor: Colors.white,
-    borderRadius: 24,
-    padding: 20,
+    borderRadius: 12,
+    padding: 16,
     marginHorizontal: 20,
-    marginBottom: 20,
+    marginBottom: 16,
     borderWidth: 1,
     borderColor: Colors.borderLight,
-    shadowColor: Colors.shadow,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 1,
   },
   sectionTitle: {
     fontSize: 16,
-    fontWeight: '800',
+    fontWeight: '700',
     color: Colors.textPrimary,
     marginBottom: 12,
-    letterSpacing: -0.3,
   },
   bioText: {
     fontSize: 14,
@@ -348,17 +320,12 @@ const styles = StyleSheet.create({
   },
   priceSection: {
     backgroundColor: Colors.white,
-    borderRadius: 24,
-    padding: 20,
+    borderRadius: 12,
+    padding: 16,
     marginHorizontal: 20,
-    marginBottom: 20,
+    marginBottom: 16,
     borderWidth: 1,
     borderColor: Colors.borderLight,
-    shadowColor: Colors.shadow,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 1,
   },
   priceRow: {
     flexDirection: 'row',
@@ -372,8 +339,8 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   priceAmount: {
-    fontSize: 22,
-    fontWeight: '800',
+    fontSize: 20,
+    fontWeight: '700',
     color: Colors.primary,
   },
   badge: {
@@ -400,21 +367,16 @@ const styles = StyleSheet.create({
   },
   bookingBtn: {
     backgroundColor: Colors.primary,
-    borderRadius: 18,
-    paddingVertical: 16,
+    borderRadius: 12,
+    paddingVertical: 14,
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: Colors.primary,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.25,
-    shadowRadius: 12,
-    elevation: 5,
   },
   bookingBtnText: {
     color: Colors.white,
     fontSize: 16,
-    fontWeight: '800',
+    fontWeight: '700',
   },
   emptyContainer: {
     flex: 1,
