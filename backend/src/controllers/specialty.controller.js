@@ -1,50 +1,31 @@
 const specialtyService = require('../services/specialty.service');
+const { asyncHandler } = require('../utils/errorHandler');
 
 class SpecialtyController {
-  async getAll(req, res, next) {
-    try {
-      const specialties = await specialtyService.getAllSpecialties(req.query);
-      res.status(200).json({ success: true, data: specialties });
-    } catch (error) {
-      next(error);
-    }
-  }
+  getAll = asyncHandler(async (req, res) => {
+    const specialties = await specialtyService.getAllSpecialties(req.query);
+    res.status(200).json({ success: true, data: specialties });
+  });
 
-  async getById(req, res, next) {
-    try {
-      const specialty = await specialtyService.getSpecialtyById(req.params.id);
-      res.status(200).json({ success: true, data: specialty });
-    } catch (error) {
-      next(error);
-    }
-  }
+  getById = asyncHandler(async (req, res) => {
+    const specialty = await specialtyService.getSpecialtyById(req.params.id);
+    res.status(200).json({ success: true, data: specialty });
+  });
 
-  async create(req, res, next) {
-    try {
-      const specialty = await specialtyService.createSpecialty(req.body);
-      res.status(201).json({ success: true, message: 'Tạo chuyên khoa thành công', data: specialty });
-    } catch (error) {
-      res.status(400).json({ success: false, message: error.message });
-    }
-  }
+  create = asyncHandler(async (req, res) => {
+    const specialty = await specialtyService.createSpecialty(req.body);
+    res.status(201).json({ success: true, message: 'Tạo chuyên khoa thành công', data: specialty });
+  });
 
-  async update(req, res, next) {
-    try {
-      const specialty = await specialtyService.updateSpecialty(req.params.id, req.body);
-      res.status(200).json({ success: true, message: 'Cập nhật thành công', data: specialty });
-    } catch (error) {
-      next(error);
-    }
-  }
+  update = asyncHandler(async (req, res) => {
+    const specialty = await specialtyService.updateSpecialty(req.params.id, req.body);
+    res.status(200).json({ success: true, message: 'Cập nhật thành công', data: specialty });
+  });
 
-  async delete(req, res, next) {
-    try {
-      await specialtyService.deleteSpecialty(req.params.id);
-      res.status(200).json({ success: true, message: 'Đã ẩn chuyên khoa này' });
-    } catch (error) {
-      next(error);
-    }
-  }
+  delete = asyncHandler(async (req, res) => {
+    await specialtyService.deleteSpecialty(req.params.id);
+    res.status(200).json({ success: true, message: 'Đã ẩn chuyên khoa này' });
+  });
 }
 
 module.exports = new SpecialtyController();

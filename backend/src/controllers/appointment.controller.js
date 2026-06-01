@@ -1,53 +1,33 @@
 const appointmentService = require('../services/appointment.service');
+const { asyncHandler } = require('../utils/errorHandler');
 
 class AppointmentController {
-  async getAll(req, res, next) {
-    try {
-      const result = await appointmentService.getAllAppointments(req.query, req.user);
-      res.status(200).json({ success: true, data: result });
-    } catch (error) {
-      next(error);
-    }
-  }
+  getAll = asyncHandler(async (req, res) => {
+    const result = await appointmentService.getAllAppointments(req.query, req.user);
+    res.status(200).json({ success: true, data: result });
+  });
 
-  async create(req, res, next) {
-    try {
-      // Ép patientId từ token đăng nhập để chống mạo danh
-      const appointment = await appointmentService.createAppointment(req.body, req.user);
-      res.status(201).json({ success: true, message: 'Đặt lịch khám thành công', data: appointment });
-    } catch (error) {
-      res.status(400).json({ success: false, message: error.message });
-    }
-  }
+  create = asyncHandler(async (req, res) => {
+    const appointment = await appointmentService.createAppointment(req.body, req.user);
+    res.status(201).json({ success: true, message: 'Đặt lịch khám thành công', data: appointment });
+  });
 
-  async updateStatus(req, res, next) {
-    try {
-      const { status, cancelReason } = req.body;
-      const appointment = await appointmentService.updateStatus(req.params.id, status, cancelReason, req.user);
-      res.status(200).json({ success: true, message: 'Cập nhật trạng thái thành công', data: appointment });
-    } catch (error) {
-      res.status(400).json({ success: false, message: error.message });
-    }
-  }
+  updateStatus = asyncHandler(async (req, res) => {
+    const { status, cancelReason } = req.body;
+    const appointment = await appointmentService.updateStatus(req.params.id, status, cancelReason, req.user);
+    res.status(200).json({ success: true, message: 'Cập nhật trạng thái thành công', data: appointment });
+  });
 
-  async getMyAppointments(req, res, next) {
-    try {
-      const userId = req.user.id;
-      const result = await appointmentService.getPatientAppointments(userId, req.query);
-      res.status(200).json({ success: true, data: result });
-    } catch (error) {
-      next(error);
-    }
-  }
+  getMyAppointments = asyncHandler(async (req, res) => {
+    const userId = req.user.id;
+    const result = await appointmentService.getPatientAppointments(userId, req.query);
+    res.status(200).json({ success: true, data: result });
+  });
 
-  async getDashboardStats(req, res, next) {
-    try {
-      const stats = await appointmentService.getDashboardStats(req.user);
-      res.status(200).json({ success: true, data: stats });
-    } catch (error) {
-      next(error);
-    }
-  }
+  getDashboardStats = asyncHandler(async (req, res) => {
+    const stats = await appointmentService.getDashboardStats(req.user);
+    res.status(200).json({ success: true, data: stats });
+  });
 }
 
 module.exports = new AppointmentController();

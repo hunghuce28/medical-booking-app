@@ -1,34 +1,23 @@
 const notificationService = require('../services/notification.service');
+const { asyncHandler } = require('../utils/errorHandler');
 
 class NotificationController {
-  async getAll(req, res, next) {
-    try {
-      const userId = req.user.id; // Lấy từ JWT token
-      const result = await notificationService.getByUserId(userId, req.query);
-      res.status(200).json({ success: true, data: result });
-    } catch (error) {
-      next(error);
-    }
-  }
+  getAll = asyncHandler(async (req, res) => {
+    const userId = req.user.id;
+    const result = await notificationService.getByUserId(userId, req.query);
+    res.status(200).json({ success: true, data: result });
+  });
 
-  async markAsRead(req, res, next) {
-    try {
-      await notificationService.markAsRead(req.params.id, req.user.id);
-      res.status(200).json({ success: true, message: 'Đã đánh dấu đã đọc' });
-    } catch (error) {
-      next(error);
-    }
-  }
+  markAsRead = asyncHandler(async (req, res) => {
+    await notificationService.markAsRead(req.params.id, req.user.id);
+    res.status(200).json({ success: true, message: 'Đã đánh dấu đã đọc' });
+  });
 
-  async markAllAsRead(req, res, next) {
-    try {
-      const userId = req.user.id;
-      const result = await notificationService.markAllAsRead(userId);
-      res.status(200).json({ success: true, message: `Đã đánh dấu ${result.count} thông báo đã đọc` });
-    } catch (error) {
-      next(error);
-    }
-  }
+  markAllAsRead = asyncHandler(async (req, res) => {
+    const userId = req.user.id;
+    const result = await notificationService.markAllAsRead(userId);
+    res.status(200).json({ success: true, message: `Đã đánh dấu ${result.count} thông báo đã đọc` });
+  });
 }
 
 module.exports = new NotificationController();

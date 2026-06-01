@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const doctorController = require('../controllers/doctor.controller');
 const { verifyToken, authorize } = require('../utils/auth');
+const { validate, createDoctorSchema } = require('../validations');
 
 // [GET] /api/doctors — Ai cũng xem được danh sách bác sĩ
 router.get('/', doctorController.getAll);
@@ -17,7 +18,7 @@ router.get('/:id/available-slots', doctorController.getAvailableSlots);
 
 // === Admin Routes ===
 // [POST] /api/doctors
-router.post('/', verifyToken, authorize('ADMIN'), doctorController.create);
+router.post('/', verifyToken, authorize('ADMIN'), validate(createDoctorSchema), doctorController.create);
 
 // [PUT] /api/doctors/:id
 router.put('/:id', verifyToken, authorize('ADMIN'), doctorController.update);
