@@ -34,9 +34,22 @@ axiosClient.interceptors.response.use(
     // Tự động logout nếu token hết hạn (401)
     if (error.response && error.response.status === 401) {
       useAuthStore.getState().logout();
+      window.location.href = '/login';
     }
     return Promise.reject(error);
   }
 );
+
+export const getFullImageUrl = (dbUrl) => {
+  if (!dbUrl) return null;
+  let path = dbUrl;
+  if (dbUrl.includes('/uploads/')) {
+    path = '/uploads/' + dbUrl.split('/uploads/')[1];
+  }
+  
+  // Lấy host từ baseURL
+  const host = 'http://localhost:5000';
+  return host + path;
+};
 
 export default axiosClient;

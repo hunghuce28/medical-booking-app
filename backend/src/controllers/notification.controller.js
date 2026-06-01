@@ -13,7 +13,7 @@ class NotificationController {
 
   async markAsRead(req, res, next) {
     try {
-      await notificationService.markAsRead(req.params.id);
+      await notificationService.markAsRead(req.params.id, req.user.id);
       res.status(200).json({ success: true, message: 'Đã đánh dấu đã đọc' });
     } catch (error) {
       next(error);

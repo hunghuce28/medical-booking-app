@@ -3,11 +3,25 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const envConfig = require('../utils/env');
 
-const JWT_SECRET = envConfig.JWT_SECRET || process.env.JWT_SECRET || 'super_secret_key_medical_booking';
+const JWT_SECRET = envConfig.JWT_SECRET || process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+  throw new Error('FATAL: JWT_SECRET chưa được cấu hình trong biến môi trường (.env). Server không thể khởi động!');
+}
 
 class AuthService {
   async register(data) {
     const { email, phone, fullName, password } = data;
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      throw new Error('Email không hợp lệ!');
+    }
+
+    // Validate password length
+    if (!password || password.length < 6) {
+      throw new Error('Mật khẩu phải có ít nhất 6 ký tự!');
+    }
 
     // 1. Kiểm tra email đã tồn tại chưa
     const existingUser = await prisma.user.findUnique({
@@ -46,8 +60,8 @@ class AuthService {
       role: user.role
     };
 
-    const accessToken = jwt.sign(payload, JWT_SECRET, { expiresIn: '7d' });
-    const refreshToken = jwt.sign(payload, JWT_SECRET, { expiresIn: '30d' });
+    const accessToken = jwt.sign({ ...payload, type: 'access' }, JWT_SECRET, { expiresIn: '1h' });
+    const refreshToken = jwt.sign({ ...payload, type: 'refresh' }, JWT_SECRET, { expiresIn: '30d' });
 
     // Trả về không kèm passwordHash
     const { passwordHash: _, ...userWithoutPassword } = user;
@@ -94,8 +108,8 @@ class AuthService {
       role: user.role
     };
 
-    const accessToken = jwt.sign(payload, JWT_SECRET, { expiresIn: '7d' });
-    const refreshToken = jwt.sign(payload, JWT_SECRET, { expiresIn: '30d' });
+    const accessToken = jwt.sign({ ...payload, type: 'access' }, JWT_SECRET, { expiresIn: '1h' });
+    const refreshToken = jwt.sign({ ...payload, type: 'refresh' }, JWT_SECRET, { expiresIn: '30d' });
 
     const { passwordHash: _, ...userWithoutPassword } = user;
 
@@ -148,6 +162,9 @@ class AuthService {
     try {
       // 1. Verify token
       const decoded = jwt.verify(token, JWT_SECRET);
+      if (decoded.type !== 'refresh') {
+        throw new Error('Loại token không hợp lệ, yêu cầu refresh token');
+      }
       
       // 2. Tìm user trong DB để đảm bảo còn tồn tại và hoạt động
       const user = await prisma.user.findUnique({
@@ -169,8 +186,8 @@ class AuthService {
         role: user.role
       };
 
-      const accessToken = jwt.sign(payload, JWT_SECRET, { expiresIn: '7d' });
-      const refreshToken = jwt.sign(payload, JWT_SECRET, { expiresIn: '30d' });
+      const accessToken = jwt.sign({ ...payload, type: 'access' }, JWT_SECRET, { expiresIn: '1h' });
+      const refreshToken = jwt.sign({ ...payload, type: 'refresh' }, JWT_SECRET, { expiresIn: '30d' });
 
       return {
         accessToken,

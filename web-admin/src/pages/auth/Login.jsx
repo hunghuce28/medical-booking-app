@@ -66,13 +66,13 @@ const Login = () => {
             name="email"
             rules={[{ required: true, message: 'Vui lòng nhập Email!' }, { type: 'email', message: 'Email không hợp lệ!' }]}
           >
-            <Input prefix={<UserOutlined />} placeholder="Email đăng nhập (admin@hospital.vn)" />
+            <Input prefix={<UserOutlined />} placeholder="Email đăng nhập" />
           </Form.Item>
           <Form.Item
             name="password"
             rules={[{ required: true, message: 'Vui lòng nhập mật khẩu!' }]}
           >
-            <Input.Password prefix={<LockOutlined />} placeholder="Mật khẩu (admin123)" />
+            <Input.Password prefix={<LockOutlined />} placeholder="Mật khẩu" />
           </Form.Item>
 
           <Form.Item>

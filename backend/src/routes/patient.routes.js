@@ -4,7 +4,7 @@ const patientController = require('../controllers/patient.controller');
 const { verifyToken, authorize } = require('../utils/auth');
 
 // [GET] /api/patients — Admin xem danh sách bệnh nhân
-router.get('/', verifyToken, authorize('ADMIN'), patientController.getAll);
+router.get('/', verifyToken, authorize('ADMIN', 'DOCTOR'), patientController.getAll);
 
 // [GET] /api/patients/profile — Lấy hồ sơ cá nhân (Dành cho Mobile App)
 router.get('/profile', verifyToken, authorize('PATIENT'), patientController.getProfile);
@@ -13,7 +13,7 @@ router.get('/profile', verifyToken, authorize('PATIENT'), patientController.getP
 router.put('/profile', verifyToken, authorize('PATIENT'), patientController.updateProfile);
 
 // [GET] /api/patients/:id — Admin xem chi tiết bệnh nhân
-router.get('/:id', verifyToken, authorize('ADMIN'), patientController.getById);
+router.get('/:id', verifyToken, authorize('ADMIN', 'DOCTOR'), patientController.getById);
 
 // [PATCH] /api/patients/:id/toggle-status — Khóa/Mở khóa tài khoản bệnh nhân
 router.patch('/:id/toggle-status', verifyToken, authorize('ADMIN'), patientController.toggleStatus);

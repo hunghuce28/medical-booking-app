@@ -1,6 +1,7 @@
 const socketIO = require('socket.io');
 const jwt = require('jsonwebtoken');
 const envConfig = require('./env');
+const prisma = require('./prisma');
 
 let io = null;
 
@@ -11,14 +12,14 @@ let io = null;
 function initSocket(server) {
   io = socketIO(server, {
     cors: {
-      origin: envConfig.CORS_ORIGIN || "*",
+      origin: envConfig.CORS_ORIGIN ? envConfig.CORS_ORIGIN.split(',') : "*",
       methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
       credentials: true
     }
   });
 
   // Middleware xác thực JWT token kết nối
-  io.use((socket, next) => {
+  io.use(async (socket, next) => {
     const token = socket.handshake.auth?.token || socket.handshake.query?.token;
     
     if (!token) {
@@ -28,6 +29,12 @@ function initSocket(server) {
     try {
       // Giải mã token sử dụng JWT_SECRET giống backend auth
       const decoded = jwt.verify(token, envConfig.JWT_SECRET);
+      
+      const user = await prisma.user.findUnique({ where: { id: decoded.id } });
+      if (!user || !user.isActive) {
+        return next(new Error('Authentication error: Account is locked or does not exist'));
+      }
+
       socket.user = decoded;
       next();
     } catch (err) {

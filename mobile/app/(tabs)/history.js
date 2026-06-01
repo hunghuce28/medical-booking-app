@@ -141,7 +141,7 @@ export default function HistoryScreen() {
 
   const renderAppointmentCard = (apt) => {
     const st = STATUS_MAP[apt.status] || STATUS_MAP.PENDING;
-    const hasReview = apt.review !== null;
+    const hasReview = !!apt.review;
     const hasRecord = apt.medicalRecord !== null;
 
     return (

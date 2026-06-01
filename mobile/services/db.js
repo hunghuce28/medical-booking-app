@@ -60,6 +60,7 @@ export const initDB = async () => {
  */
 
 export const cacheSpecialties = async (specialtiesArray) => {
+  if (Platform.OS === 'web') return;
   try {
     const db = await openDatabase();
     // Chạy transaction để tăng hiệu suất khi insert/update nhiều dòng
@@ -93,6 +94,7 @@ export const cacheSpecialties = async (specialtiesArray) => {
 };
 
 export const getCachedSpecialties = async () => {
+  if (Platform.OS === 'web') return [];
   try {
     const db = await openDatabase();
     const result = await db.getAllAsync('SELECT * FROM specialties ORDER BY id ASC;');

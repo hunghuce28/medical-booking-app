@@ -1,17 +1,48 @@
 const express = require("express");
 const cors = require("cors");
 const http = require("http");
+const helmet = require("helmet");
+const rateLimit = require("express-rate-limit");
 const path = require("path");
 require("dotenv").config();
 
+const envConfig = require("./utils/env");
+envConfig.validate();
+
 const apiRoutes = require("./routes");
 const { initSocket } = require("./utils/socket");
+const { errorHandler } = require("./utils/errorHandler");
 
 const app = express();
 
+// Security Middlewares
+app.use(helmet());
+app.use(helmet.crossOriginResourcePolicy({ policy: "cross-origin" })); // Cho phép load ảnh từ các origin khác
+
+// Rate limiting
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 phút
+  max: 300, // giới hạn 300 requests / 15 phút
+  message: { success: false, message: "Too many requests, please try again later." }
+});
+app.use("/api", limiter);
+
 // Middleware
-app.use(cors());
-app.use(express.json());
+const allowedOrigins = process.env.CORS_ORIGIN 
+  ? process.env.CORS_ORIGIN.split(',') 
+  : ['http://localhost:5173', 'http://localhost:3000', 'http://localhost:8081'];
+
+app.use(cors({
+  origin: function (origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true
+}));
+app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: true }));
 
 // Phục vụ thư mục upload ảnh tĩnh
@@ -29,13 +60,7 @@ app.get("/", (req, res) => {
 app.use("/api", apiRoutes);
 
 // Error Handling Middleware (Global)
-app.use((err, req, res, next) => {
-  console.error("[Error]:", err.stack);
-  res.status(err.status || 500).json({
-    success: false,
-    message: err.message || "Internal Server Error",
-  });
-});
+app.use(errorHandler);
 
 const PORT = process.env.PORT || 5000;
 const server = http.createServer(app);

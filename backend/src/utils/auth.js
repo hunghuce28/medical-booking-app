@@ -5,6 +5,7 @@
 
 const jwt = require("jsonwebtoken");
 const envConfig = require("../utils/env");
+const prisma = require("../utils/prisma");
 
 /**
  * Verify JWT token middleware
@@ -24,6 +25,13 @@ async function verifyToken(req, res, next) {
       : authHeader;
 
     const decoded = jwt.verify(token, envConfig.JWT_SECRET);
+    if (decoded.type !== "access") {
+      throw new Error("Invalid token type. Access token required.");
+    }
+    const user = await prisma.user.findUnique({ where: { id: decoded.id } });
+    if (!user || !user.isActive) {
+      throw new Error("Account is locked or does not exist.");
+    }
     req.user = decoded;
     next();
   } catch (error) {
@@ -74,7 +82,12 @@ async function optionalAuth(req, res, next) {
       : authHeader;
 
     const decoded = jwt.verify(token, envConfig.JWT_SECRET);
-    req.user = decoded;
+    if (decoded.type === "access") {
+      const user = await prisma.user.findUnique({ where: { id: decoded.id } });
+      if (user && user.isActive) {
+        req.user = decoded;
+      }
+    }
     next();
   } catch (error) {
     next();

@@ -17,7 +17,7 @@ const TYPE_ICONS = {
   APPOINTMENT_CREATED: 'calendar-outline',
   APPOINTMENT_CONFIRMED: 'checkmark-circle-outline',
   APPOINTMENT_REJECTED: 'close-circle-outline',
-  APPOINTMENT_CANCELLED: 'ban-outline',
+  APPOINTMENT_CANCELLED: 'close-circle-outline',
   APPOINTMENT_COMPLETED: 'star-outline',
   APPOINTMENT_REMINDER: 'alarm-outline',
   GENERAL: 'notifications-outline',

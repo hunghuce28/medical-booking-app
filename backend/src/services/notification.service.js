@@ -20,7 +20,10 @@ class NotificationService {
     return { notifications, total, unreadCount };
   }
 
-  async markAsRead(id) {
+  async markAsRead(id, userId) {
+    const notification = await prisma.notification.findUnique({ where: { id: parseInt(id) } });
+    if (!notification) throw new Error('Không tìm thấy thông báo');
+    if (notification.userId !== parseInt(userId)) throw new Error('Bạn không có quyền thao tác trên thông báo này');
     return await prisma.notification.update({
       where: { id: parseInt(id) },
       data: { isRead: true },

@@ -4,7 +4,7 @@ const appointmentController = require('../controllers/appointment.controller');
 const { verifyToken, authorize } = require('../utils/auth');
 
 // [GET] /api/appointments/dashboard — Thống kê cho Dashboard (ĐẶT TRƯỚC /:id)
-router.get('/dashboard', verifyToken, authorize('ADMIN'), appointmentController.getDashboardStats);
+router.get('/dashboard', verifyToken, authorize('ADMIN', 'DOCTOR'), appointmentController.getDashboardStats);
 
 // [GET] /api/appointments/my — Bệnh nhân xem lịch khám của mình
 router.get('/my', verifyToken, appointmentController.getMyAppointments);

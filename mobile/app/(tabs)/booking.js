@@ -25,7 +25,7 @@ const STEPS = ['Chuyên khoa', 'Bác sĩ', 'Ngày khám', 'Giờ khám', 'Xác n
 
 export default function BookingScreen() {
   const params = useLocalSearchParams();
-  const { doctorId } = params;
+  const { doctorId, specialtyId } = params;
   const user = useAuthStore((s) => s.user);
   const [step, setStep] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -60,8 +60,27 @@ export default function BookingScreen() {
         }
       };
       autoSelectDoctor();
+    } else if (specialtyId) {
+      const autoSelectSpecialty = async () => {
+        try {
+          setLoading(true);
+          const res = await api.get(`/specialties`);
+          const specs = res.data;
+          const spec = specs.find(s => s.id === parseInt(specialtyId));
+          if (spec) {
+            setSelectedSpecialty(spec);
+            loadDoctors(spec.id);
+            setStep(1); // Nhảy tới bước Chọn bác sĩ
+          }
+        } catch (e) {
+          console.log('Error auto-selecting specialty:', e);
+        } finally {
+          setLoading(false);
+        }
+      };
+      autoSelectSpecialty();
     }
-  }, [doctorId]);
+  }, [doctorId, specialtyId]);
 
   // ───── Step 1: Load chuyên khoa ─────
   useEffect(() => {
@@ -230,7 +249,7 @@ export default function BookingScreen() {
                 <Text style={styles.docDegree}>{doc.degree} • {doc.experienceYears} năm KN</Text>
                 <View style={styles.docMeta}>
                   <Text style={styles.docRating}><Ionicons name="star" size={12} color={Colors.accent} /> {doc.rating?.toFixed(1)}</Text>
-                  <Text style={styles.docFee}>{Number(doc.consultationFee).toLocaleString('vi-VN')}đ</Text>
+                  <Text style={styles.docFee}>{Number(doc.consultationFee || 0).toLocaleString('vi-VN')}đ</Text>
                 </View>
               </View>
             </TouchableOpacity>
@@ -343,7 +362,7 @@ export default function BookingScreen() {
         <View style={styles.summaryRow}>
           <Text style={styles.summaryLabel}>Phí khám</Text>
           <Text style={[styles.summaryValue, { color: Colors.primary, fontWeight: '700' }]}>
-            {Number(selectedDoctor?.consultationFee).toLocaleString('vi-VN')}đ
+            {Number(selectedDoctor?.consultationFee || 0).toLocaleString('vi-VN')}đ
           </Text>
         </View>
       </View>

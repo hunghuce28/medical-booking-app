@@ -110,13 +110,15 @@ const useAuthStore = create((set, get) => ({
       const token = await storage.getItem('accessToken');
       if (!token) return;
 
-      // Set token trước để api interceptor có thể dùng
-      set({ token, isAuthenticated: true });
+      // Set token trước để api interceptor có thể dùng (nhưng CHƯA set isAuthenticated)
+      set({ token });
 
-      // Fetch đầy đủ user info từ server
+      // Fetch đầy đủ user info từ server để xác thực token còn hợp lệ
       const response = await api.get('/auth/me');
       const user = response.data;
-      set({ user });
+
+      // CHỈ set isAuthenticated: true SAU KHI /auth/me thành công
+      set({ user, isAuthenticated: true });
     } catch (error) {
       // Token hết hạn hoặc không hợp lệ → xóa và logout
       console.log('Session restore failed:', error);
@@ -125,6 +127,11 @@ const useAuthStore = create((set, get) => ({
       set({ token: null, user: null, isAuthenticated: false });
     }
   },
+
+  /**
+   * Cập nhật thông tin user trong store (dùng sau khi sửa profile)
+   */
+  setUser: (userData) => set({ user: userData }),
 
   /**
    * Xóa lỗi

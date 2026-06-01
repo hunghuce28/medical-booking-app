@@ -3,7 +3,7 @@ const reviewService = require('../services/review.service');
 class ReviewController {
   async create(req, res, next) {
     try {
-      const review = await reviewService.create(req.body);
+      const review = await reviewService.create(req.body, req.user);
       res.status(201).json({ success: true, message: 'Đánh giá thành công', data: review });
     } catch (error) {
       res.status(400).json({ success: false, message: error.message });

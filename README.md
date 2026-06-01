@@ -87,65 +87,52 @@ Web Admin sẽ chạy tại: `http://localhost:5173`
 
 ```
 medical_appointment_booking/
-├── backend/                 # Backend API (Express.js + Prisma + Socket.io)
+├── backend/                 # Backend API (Express.js + Prisma)
 │   ├── prisma/
-│   │   ├── schema.prisma    # Database schema (PostgreSQL)
-│   │   └── seed.js          # Dữ liệu mẫu (chuyên khoa, bác sĩ)
+│   │   ├── schema.prisma    # Database schema
+│   │   └── seed.js          # Dữ liệu mẫu
 │   ├── src/
-│   │   ├── controllers/     # Điều phối request & response
-│   │   ├── services/        # Logic nghiệp vụ chính
-│   │   ├── routes/          # API endpoints & upload route
-│   │   └── utils/           # Helper xác thực, socket, biến môi trường
-│   └── .env                 # Cấu hình kết nối DB & bảo mật JWT
-├── mobile/                  # Mobile App Bệnh nhân (React Native + Expo)
-│   ├── app/                 # Các trang ứng dụng Expo Router
-│   ├── services/            # Kết nối API & socket client di động
-│   ├── stores/              # Quản lý state bằng Zustand
-│   └── constants/           # Bảng màu Colors & cấu hình
-└── web-admin/               # Web Admin Quản trị & Bác sĩ (React + Vite + Ant Design)
-    └── src/                 # Mã nguồn React
+│   │   ├── controllers/     # Request handlers
+│   │   ├── services/        # Business logic
+│   │   ├── routes/          # API routes
+│   │   └── utils/           # Utilities (auth, error handler...)
+│   └── .env                 # Environment variables
+├── mobile/                  # Mobile App (React Native + Expo)
+│   ├── app/                 # Expo Router screens
+│   ├── services/            # API services
+│   ├── stores/              # Zustand state management
+│   └── constants/           # Colors, config...
+├── web-admin/               # Web Admin (React + Vite)
+│   └── src/
+└── docs/                    # Tài liệu dự án
+    ├── requirements-analysis.md
+    ├── database-design.md
+    ├── api-documentation.md
+    └── implementation_plan.md
 ```
-
----
-
-## ⚡ Các Tính Năng Nâng Cấp Nổi Bật (Premium Features)
-
-Dự án đã được tích hợp và nâng cấp các giải pháp công nghệ thời thượng nhất:
-*   **Đẩy thông báo thời gian thực (Realtime Notifications)**: Sử dụng **Socket.io** liên kết từ backend đến cả Web Admin và Mobile App. Các room được phân tách theo `user:${userId}` bảo mật, giúp thông báo chuyển trạng thái lịch khám hiển thị lập tức không cần tải lại trang.
-*   **Phân quyền & Bảo mật Web Admin (Role-based Guard)**: Chặn hoàn toàn vai trò Bệnh nhân (`PATIENT`) đăng nhập trên Web. Tự động ẩn các menu đặc quyền và bảo vệ Router (`RoleRoute` guard) chặn Bác sĩ (`DOCTOR`) truy cập vào các trang quản lý của `ADMIN`.
-*   **Duy trì phiên đăng nhập (Refresh Token)**: Cơ chế gọi API gia hạn Access Token ngầm chống crash app trên di động.
-
----
 
 ## 📌 API Endpoints chính
 
-| Method | Endpoint | Vai trò truy cập | Mô tả |
-|---|---|---|---|
-| POST | `/api/auth/register` | Toàn quyền | Đăng ký tài khoản mới |
-| POST | `/api/auth/login` | Toàn quyền | Đăng nhập hệ thống |
-| POST | `/api/auth/refresh-token` | Toàn quyền | Cấp Access/Refresh Token mới ngầm |
-| GET | `/api/specialties` | Toàn quyền | Lấy danh sách chuyên khoa |
-| POST | `/api/specialties` | ADMIN | Thêm chuyên khoa mới |
-| PUT | `/api/specialties/:id` | ADMIN | Cập nhật chuyên khoa & Trạng thái hoạt động |
-| POST | `/api/upload` | ADMIN, DOCTOR | Tải tệp ảnh thật lên lưu cục bộ |
-| GET | `/api/doctors` | Toàn quyền | Danh sách bác sĩ |
-| GET | `/api/doctors/:id` | Toàn quyền | Chi tiết thông tin & lịch làm việc bác sĩ |
-| PUT | `/api/doctors/:id/schedules` | ADMIN | Cấu hình lịch làm việc cố định hàng tuần |
-| POST | `/api/appointments` | PATIENT | Đặt lịch khám bệnh |
-| PATCH | `/api/appointments/:id/status`| ADMIN, DOCTOR, PATIENT | Duyệt/Từ chối/Hủy lịch khám (Có phân quyền) |
-| GET | `/api/appointments/dashboard` | ADMIN, DOCTOR | Thống kê Dashboard |
+| Method | Endpoint | Mô tả |
+|---|---|---|
+| POST | `/api/auth/register` | Đăng ký tài khoản |
+| POST | `/api/auth/login` | Đăng nhập |
+| GET | `/api/specialties` | Danh sách chuyên khoa |
+| GET | `/api/doctors` | Danh sách bác sĩ |
+| GET | `/api/doctors/:id` | Chi tiết bác sĩ |
+| POST | `/api/appointments` | Đặt lịch khám |
+| GET | `/api/appointments` | Xem lịch khám |
 
----
+Xem đầy đủ tại: [`docs/api-documentation.md`](docs/api-documentation.md)
 
 ## 👥 Thành viên nhóm
 
-| Thành viên | Vai trò | Công việc chính |
-|---|---|---|
-| **Nguyễn Việt Hùng** | Backend Dev + Web Admin | API endpoints, Database PostgreSQL, Web Admin dashboard |
-| **Lê Việt Anh** | Mobile Developer | React Native Expo App, Zustand, expo-image, mobile UI/UX |
-| **Nguyễn Lý Tiền** | Fullstack + Testing | Tài liệu kỹ thuật, bộ kịch bản kiểm thử, vận hành và test |
+| Thành viên | Vai trò |
+|---|---|
+| Nguyễn Việt Hùng | Backend Dev + Web Admin |
+| Lê Việt Anh | Mobile Developer |
+| Nguyễn Lý Tiền | Fullstack + Docs + Test |
 
 ## 📄 License
 
 ISC
-

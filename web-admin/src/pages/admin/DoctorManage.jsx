@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Table, Button, Space, Card, Tag, message, Modal, Form, Input, Popconfirm, Select } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined, LockOutlined, UnlockOutlined, CalendarOutlined } from '@ant-design/icons';
+import { PlusOutlined, EditOutlined, LockOutlined, UnlockOutlined, CalendarOutlined } from '@ant-design/icons';
 import axiosClient from '../../utils/axiosClient';
 
 const DAYS_OF_WEEK = [
@@ -123,7 +123,7 @@ const DoctorManage = () => {
 
   const handleToggleStatus = async (id, currentStatus) => {
     try {
-      // Dùng PUT thay vì DELETE để có thể mở khóa (truyền isActive)
+      // Dùng PUT để cập nhật trường isActive
       const res = await axiosClient.put(`/doctors/${id}`, {
         isActive: currentStatus !== 'active'
       });

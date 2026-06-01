@@ -67,7 +67,8 @@ class DoctorService {
         }
       });
 
-      return { user, doctor };
+      const { passwordHash: _, ...safeUser } = user;
+      return { user: safeUser, doctor };
     });
 
     return result;
@@ -149,15 +150,12 @@ class DoctorService {
     // 4. Tìm hoặc tạo TimeSlot và gắn trạng thái
     const result = [];
     for (const slot of slots) {
-      let timeSlot = await prisma.timeSlot.findUnique({
-        where: { doctorId_date_startTime: { doctorId: parseInt(doctorId), date, startTime: slot.startTime } }
+      // Fix B4: Sử dụng upsert để tránh lỗi P2002 khi có nhiều request đồng thời tạo slot
+      let timeSlot = await prisma.timeSlot.upsert({
+        where: { doctorId_date_startTime: { doctorId: parseInt(doctorId), date, startTime: slot.startTime } },
+        update: {},
+        create: { doctorId: parseInt(doctorId), date, startTime: slot.startTime, endTime: slot.endTime, status: 'AVAILABLE' }
       });
-
-      if (!timeSlot) {
-        timeSlot = await prisma.timeSlot.create({
-          data: { doctorId: parseInt(doctorId), date, startTime: slot.startTime, endTime: slot.endTime, status: 'AVAILABLE' }
-        });
-      }
 
       result.push({
         id: timeSlot.id,
@@ -225,10 +223,20 @@ class DoctorService {
   }
 
   async deleteDoctor(id) {
-    // Soft delete: chuyển isActive thành false
-    return await prisma.doctor.update({
-      where: { id: parseInt(id) },
-      data: { isActive: false }
+    // Fix B13: Soft delete cả Doctor và User
+    const doctor = await prisma.doctor.findUnique({ where: { id: parseInt(id) } });
+    if (!doctor) throw new Error('Không tìm thấy bác sĩ');
+
+    return await prisma.$transaction(async (tx) => {
+      await tx.user.update({
+        where: { id: doctor.userId },
+        data: { isActive: false }
+      });
+      
+      return await tx.doctor.update({
+        where: { id: parseInt(id) },
+        data: { isActive: false }
+      });
     });
   }
 }

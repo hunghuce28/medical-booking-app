@@ -33,11 +33,12 @@ const AppRouter = () => {
       }>
         <Route index element={<Navigate to="/admin/dashboard" replace />} />
         
-        {/* Route Dashboard và Appointments: Cả ADMIN và DOCTOR đều được vào */}
+        {/* Các route chung cho ADMIN và DOCTOR */}
         <Route path="dashboard" element={<Dashboard />} />
+        <Route path="patients" element={<PatientManage />} />
         <Route path="appointments" element={<AppointmentManage />} />
         
-        {/* Các Route Quản lý đặc quyền: Chỉ cho phép ADMIN truy cập */}
+        {/* Các route nhạy cảm CHỈ dành cho ADMIN */}
         <Route path="specialties" element={
           <RoleRoute allowedRoles={['ADMIN']}>
             <SpecialtyManage />
@@ -46,11 +47,6 @@ const AppRouter = () => {
         <Route path="doctors" element={
           <RoleRoute allowedRoles={['ADMIN']}>
             <DoctorManage />
-          </RoleRoute>
-        } />
-        <Route path="patients" element={
-          <RoleRoute allowedRoles={['ADMIN']}>
-            <PatientManage />
           </RoleRoute>
         } />
       </Route>
@@ -62,4 +58,3 @@ const AppRouter = () => {
 };
 
 export default AppRouter;
-

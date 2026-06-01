@@ -3,7 +3,7 @@ const patientService = require('../services/patient.service');
 class PatientController {
   async getAll(req, res, next) {
     try {
-      const result = await patientService.getAllPatients(req.query);
+      const result = await patientService.getAllPatients(req.query, req.user);
       res.status(200).json({ success: true, data: result });
     } catch (error) {
       next(error);
@@ -12,7 +12,7 @@ class PatientController {
 
   async getById(req, res, next) {
     try {
-      const patient = await patientService.getPatientById(req.params.id);
+      const patient = await patientService.getPatientById(req.params.id, req.user);
       res.status(200).json({ success: true, data: patient });
     } catch (error) {
       res.status(404).json({ success: false, message: error.message });

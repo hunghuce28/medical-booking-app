@@ -6,19 +6,27 @@
 import axios from 'axios';
 import { Platform } from 'react-native';
 import storage from './storage';
+import useAuthStore from '../stores/authStore';
+
+import Constants from 'expo-constants';
 
 // Tự động chọn BASE_URL theo nền tảng
 // - Web (Expo Web): dùng localhost
-// - Android Emulator: dùng 10.0.2.2 (alias localhost trên emulator)
-// - Thiết bị thật: dùng IP máy tính trong mạng LAN
+// - Expo Go trên điện thoại thật: Tự động lấy IP của máy tính đang phát Expo
 const getBaseUrl = () => {
   if (Platform.OS === 'web') {
     return 'http://localhost:5000/api';
   }
-  if (Platform.OS === 'android') {
-    return 'http://192.168.50.203:5000/api'; // ← Đổi thành IP máy bạn khi dùng thiết bị thật
+  
+  // Lấy IP LAN của máy tính tự động từ cấu hình Expo
+  const hostUri = Constants.expoConfig?.hostUri;
+  if (hostUri) {
+    const ip = hostUri.split(':')[0];
+    return `http://${ip}:5000/api`;
   }
-  return 'http://localhost:5000/api'; // iOS Simulator
+
+  // Fallback nếu chạy build độc lập
+  return 'http://192.168.50.203:5000/api';
 };
 
 const BASE_URL = getBaseUrl();
@@ -72,6 +80,14 @@ api.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
+    // Bỏ qua interceptor nếu là API đăng nhập / đăng ký để lấy được lỗi sai mật khẩu
+    if (originalRequest.url.includes('/auth/login') || originalRequest.url.includes('/auth/register')) {
+      return Promise.reject({
+        status: error.response?.status || 400,
+        message: error.response?.data?.message || 'Có lỗi xảy ra',
+      });
+    }
+
     // Server trả về lỗi 401 (Unauthorized) và chưa từng thử lại
     if (error.response?.status === 401 && !originalRequest._retry) {
       if (isRefreshing) {
@@ -115,9 +131,10 @@ api.interceptors.response.use(
         return api(originalRequest);
       } catch (refreshError) {
         processQueue(refreshError, null);
-        // Nếu refresh thất bại, xóa token (có thể dispatch sự kiện để UI logout)
+        // Nếu refresh thất bại, xóa token và đăng xuất UI
         await storage.deleteItem('accessToken');
         await storage.deleteItem('refreshToken');
+        useAuthStore.getState().logout();
         return Promise.reject(refreshError);
       } finally {
         isRefreshing = false;
@@ -141,5 +158,18 @@ api.interceptors.response.use(
     return Promise.reject(error);
   }
 );
+
+export const getFullImageUrl = (dbUrl) => {
+  if (!dbUrl) return null;
+  // Lấy đường dẫn relative từ URL trong DB (VD: http://192.168.../uploads/file.png -> /uploads/file.png)
+  let path = dbUrl;
+  if (dbUrl.includes('/uploads/')) {
+    path = '/uploads/' + dbUrl.split('/uploads/')[1];
+  }
+  
+  // Nối với BASE_URL hiện tại của thiết bị
+  const host = getBaseUrl().replace('/api', '');
+  return host + path;
+};
 
 export default api;

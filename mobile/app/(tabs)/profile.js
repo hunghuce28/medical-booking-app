@@ -24,7 +24,7 @@ const GENDER_OPTIONS = [
 
 export default function ProfileScreen() {
   const router = useRouter();
-  const { user, logout } = useAuthStore();
+  const { user, logout, setUser } = useAuthStore();
 
   // Edit Profile Modal
   const [editModal, setEditModal] = useState(false);
@@ -83,6 +83,8 @@ export default function ProfileScreen() {
     try {
       setSaving(true);
       await api.put('/patients/profile', editData);
+      // Cập nhật Zustand store để giao diện hiển thị đúng ngay lập tức
+      setUser({ ...user, fullName: editData.fullName, phone: editData.phone });
       showAlert('Thành công', 'Đã cập nhật hồ sơ');
       setEditModal(false);
     } catch (e) {

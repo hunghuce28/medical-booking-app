@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Table, Card, Tag, Space, Button, Input, message, Popconfirm, Modal, Descriptions } from 'antd';
-import { SearchOutlined, LockOutlined, UnlockOutlined, EyeOutlined, UserOutlined } from '@ant-design/icons';
+import { SearchOutlined, LockOutlined, UnlockOutlined, EyeOutlined } from '@ant-design/icons';
+import useAuthStore from '../../stores/authStore';
 import axiosClient from '../../utils/axiosClient';
 
 const PatientManage = () => {
+  const user = useAuthStore((state) => state.user);
   const [dataSource, setDataSource] = useState([]);
   const [loading, setLoading] = useState(true);
   const [total, setTotal] = useState(0);
@@ -104,22 +106,24 @@ const PatientManage = () => {
           <Button type="primary" icon={<EyeOutlined />} size="small" onClick={() => handleViewDetail(record.key)}>
             Chi tiết
           </Button>
-          <Popconfirm
-            title={record.status === 'active' ? 'Khóa tài khoản bệnh nhân này?' : 'Mở khóa tài khoản này?'}
-            onConfirm={() => handleToggleStatus(record.key)}
-            okText="Đồng ý"
-            cancelText="Hủy"
-          >
-            <Button
-              danger={record.status === 'active'}
-              type={record.status === 'active' ? 'default' : 'primary'}
-              icon={record.status === 'active' ? <LockOutlined /> : <UnlockOutlined />}
-              size="small"
-              style={record.status !== 'active' ? { background: '#faad14', borderColor: '#faad14' } : {}}
+          {user?.role === 'ADMIN' && (
+            <Popconfirm
+              title={record.status === 'active' ? 'Khóa tài khoản bệnh nhân này?' : 'Mở khóa tài khoản này?'}
+              onConfirm={() => handleToggleStatus(record.key)}
+              okText="Đồng ý"
+              cancelText="Hủy"
             >
-              {record.status === 'active' ? 'Khóa' : 'Mở khóa'}
-            </Button>
-          </Popconfirm>
+              <Button
+                danger={record.status === 'active'}
+                type={record.status === 'active' ? 'default' : 'primary'}
+                icon={record.status === 'active' ? <LockOutlined /> : <UnlockOutlined />}
+                size="small"
+                style={record.status !== 'active' ? { background: '#faad14', borderColor: '#faad14' } : {}}
+              >
+                {record.status === 'active' ? 'Khóa' : 'Mở khóa'}
+              </Button>
+            </Popconfirm>
+          )}
         </Space>
       ),
     },

@@ -3,12 +3,25 @@ import { io } from 'socket.io-client';
 const SOCKET_URL = 'http://localhost:5000';
 let socket = null;
 
+if (typeof window !== 'undefined') {
+  window.addEventListener('online', () => {
+    if (socket && socket.disconnected) {
+      console.log('[Socket] Network is online, reconnecting...');
+      socket.connect();
+    }
+  });
+}
+
 /**
  * Khởi tạo kết nối socket
  * @param {string} token - JWT token để xác thực với backend
  */
 export const connectSocket = (token) => {
-  if (socket && socket.connected) return socket;
+  if (socket) {
+    if (socket.connected) return socket;
+    socket.disconnect();
+    socket = null;
+  }
 
   socket = io(SOCKET_URL, {
     auth: { token },

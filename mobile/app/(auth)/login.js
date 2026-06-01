@@ -127,12 +127,6 @@ export default function LoginScreen() {
             </TouchableOpacity>
           </View>
 
-            {/* Demo accounts hint */}
-            <View style={styles.demoHint}>
-              <Text style={styles.demoTitle}>📌 Tài khoản demo:</Text>
-              <Text style={styles.demoText}>Bệnh nhân: benhnhan@gmail.com / patient123</Text>
-              <Text style={styles.demoText}>Bác sĩ: bacsi_an@hospital.vn / doctor123</Text>
-            </View>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -270,24 +264,5 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: Colors.primary,
     fontWeight: '600',
-  },
-  demoHint: {
-    backgroundColor: Colors.infoBg,
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 20,
-    borderWidth: 1,
-    borderColor: Colors.primaryLight + '40',
-  },
-  demoTitle: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: Colors.primary,
-    marginBottom: 6,
-  },
-  demoText: {
-    fontSize: 12,
-    color: Colors.textSecondary,
-    lineHeight: 20,
   },
 });

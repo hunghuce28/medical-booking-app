@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { Table, Card, Tag, Space, Button, Select, message, Modal, Form, Input, DatePicker } from 'antd';
 import { CheckCircleOutlined, CloseCircleOutlined, ExclamationCircleOutlined, FormOutlined, EyeOutlined } from '@ant-design/icons';
 import axiosClient from '../../utils/axiosClient';
-import dayjs from 'dayjs';
 
 const AppointmentManage = () => {
   const [dataSource, setDataSource] = useState([]);
@@ -87,6 +86,7 @@ const AppointmentManage = () => {
   };
 
   const handleSaveRecord = async (values) => {
+    if (!currentAppointment) return;
     try {
       setSubmittingRecord(true);
       

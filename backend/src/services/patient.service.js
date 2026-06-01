@@ -1,9 +1,16 @@
 const prisma = require('../utils/prisma');
 
 class PatientService {
-  async getAllPatients(query) {
+  async getAllPatients(query, currentUser = null) {
     const { search, page = 1, limit = 20 } = query;
     let filter = {};
+
+    if (currentUser && currentUser.role === 'DOCTOR') {
+      const doctor = await prisma.doctor.findUnique({ where: { userId: currentUser.id } });
+      if (doctor) {
+        filter.appointments = { some: { doctorId: doctor.id } };
+      }
+    }
 
     if (search) {
       filter.user = {
@@ -34,9 +41,23 @@ class PatientService {
     return { patients, total };
   }
 
-  async getPatientById(id) {
+  async getPatientById(id, currentUser = null) {
+    const patientId = parseInt(id);
+
+    if (currentUser && currentUser.role === 'DOCTOR') {
+      const doctor = await prisma.doctor.findUnique({ where: { userId: currentUser.id } });
+      if (doctor) {
+        const hasAppointment = await prisma.appointment.count({
+          where: { patientId: patientId, doctorId: doctor.id }
+        });
+        if (hasAppointment === 0) {
+          throw new Error('Bạn không có quyền xem thông tin bệnh nhân này');
+        }
+      }
+    }
+
     const patient = await prisma.patient.findUnique({
-      where: { id: parseInt(id) },
+      where: { id: patientId },
       include: {
         user: { select: { fullName: true, email: true, phone: true, avatar: true, isActive: true } },
         appointments: {
@@ -88,7 +109,7 @@ class PatientService {
 
     const result = await prisma.$transaction(async (tx) => {
       // Cập nhật User
-      if (fullName || phone) {
+      if (fullName !== undefined || phone !== undefined) {
         await tx.user.update({
           where: { id: parseInt(userId) },
           data: {

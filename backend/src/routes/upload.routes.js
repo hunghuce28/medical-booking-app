@@ -43,25 +43,31 @@ const upload = multer({
 });
 
 // Route POST /api/upload
-// Yêu cầu đăng nhập (ADMIN hoặc DOCTOR được upload ảnh)
-router.post('/', verifyToken, authorize('ADMIN', 'DOCTOR'), upload.single('file'), (req, res) => {
+// Yêu cầu đăng nhập (ADMIN, DOCTOR, PATIENT được upload ảnh)
+router.post('/', verifyToken, authorize('ADMIN', 'DOCTOR', 'PATIENT'), (req, res, next) => {
+  upload.single('file')(req, res, (err) => {
+    if (err instanceof multer.MulterError) {
+      return res.status(400).json({ success: false, message: 'Lỗi tải file: ' + err.message });
+    } else if (err) {
+      return res.status(400).json({ success: false, message: err.message });
+    }
+    next();
+  });
+}, (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ success: false, message: 'Vui lòng cung cấp file để tải lên' });
     }
 
-    // Tạo URL ảnh tĩnh để trả về cho client
-    // Ví dụ: http://localhost:5000/uploads/file-123456789.png
-    const protocol = req.protocol;
-    const host = req.get('host');
-    const fileUrl = `${protocol}://${host}/uploads/${req.file.filename}`;
+    // Tạo URL ảnh relative để trả về cho client. Client sẽ tự nối BASE_URL.
+    // Ví dụ: /uploads/file-123456789.png
+    const fileUrl = `/uploads/${req.file.filename}`;
 
     res.status(200).json({
       success: true,
       message: 'Tải file lên thành công',
       data: {
         filename: req.file.filename,
-        path: req.file.path,
         url: fileUrl
       }
     });

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Table, Button, Space, Card, message, Modal, Form, Input, Popconfirm, Tag, Switch, Upload, Avatar } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined, UploadOutlined, EyeOutlined, EyeInvisibleOutlined, AppstoreOutlined } from '@ant-design/icons';
-import axiosClient from '../../utils/axiosClient';
+import axiosClient, { getFullImageUrl } from '../../utils/axiosClient';
 
 const SpecialtyManage = () => {
   const [dataSource, setDataSource] = useState([]);
@@ -172,9 +172,10 @@ const SpecialtyManage = () => {
       align: 'center',
       render: (icon) => (
         <Avatar
-          src={icon}
+          src={getFullImageUrl(icon)}
           size={56}
           shape="square"
+          className="avatar-glow"
           style={{ 
             backgroundColor: '#f8fafc',
             objectFit: 'cover'
@@ -231,7 +232,8 @@ const SpecialtyManage = () => {
               borderRadius: '20px', 
               fontWeight: 600, 
               padding: '2px 10px',
-              border: 'none'
+              border: 'none',
+              boxShadow: isActive ? '0 2px 8px rgba(82,196,26,0.15)' : '0 2px 8px rgba(255,77,79,0.15)'
             }}
           >
             {isActive ? 'Đang hoạt động' : 'Tạm ngưng'}
@@ -308,10 +310,11 @@ const SpecialtyManage = () => {
   return (
     <div style={{ padding: '4px' }}>
       <Card 
+        className="glass-card"
         title={
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <span style={{ fontSize: '22px' }}>🏥</span>
-            <span style={{ fontSize: '20px', letterSpacing: '-0.3px' }}>
+            <span className="gradient-text" style={{ fontSize: '20px', letterSpacing: '-0.3px' }}>
               Danh mục Chuyên khoa
             </span>
           </div>
@@ -321,6 +324,7 @@ const SpecialtyManage = () => {
             type="primary" 
             icon={<PlusOutlined />} 
             onClick={() => showModal()} 
+            className="gradient-button"
           >
             Thêm chuyên khoa mới
           </Button>
@@ -358,6 +362,7 @@ const SpecialtyManage = () => {
           >
             <Input 
               placeholder="VD: Tim mạch, Nhi khoa, Răng Hàm Mặt..." 
+              className="premium-input" 
             />
           </Form.Item>
 
@@ -368,6 +373,7 @@ const SpecialtyManage = () => {
             <Input.TextArea 
               rows={4} 
               placeholder="Nhập giới thiệu chi tiết về chuyên khoa y tế này..." 
+              className="premium-textarea" 
             />
           </Form.Item>
 
@@ -398,6 +404,7 @@ const SpecialtyManage = () => {
               <Input 
                 placeholder="Hoặc dán địa chỉ URL hình ảnh biểu tượng vào đây..." 
                 value={form.getFieldValue('icon')}
+                className="premium-input"
                 onChange={(e) => {
                   form.setFieldValue('icon', e.target.value);
                   if (e.target.value) {
@@ -433,7 +440,8 @@ const SpecialtyManage = () => {
               <Button 
                 type="primary" 
                 htmlType="submit" 
-                loading={uploading || loading} 
+                loading={uploading} 
+                className="gradient-button"
               >
                 {editingId ? "Cập nhật" : "Tạo mới"}
               </Button>

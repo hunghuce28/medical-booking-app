@@ -15,7 +15,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import api from '../../services/api';
+import { Image } from 'expo-image';
+import api, { getFullImageUrl } from '../../services/api';
 import Colors from '../../constants/colors';
 
 export default function DoctorDetailScreen() {
@@ -90,9 +91,17 @@ export default function DoctorDetailScreen() {
         {/* Doctor Profile Card */}
         <View style={styles.profileCard}>
           <View style={styles.avatarContainer}>
-            <Text style={styles.avatarText}>
-              {doctor.user?.fullName?.charAt(0) || '?'}
-            </Text>
+            {doctor.user?.avatar ? (
+              <Image
+                source={{ uri: getFullImageUrl(doctor.user.avatar) }}
+                style={{ width: '100%', height: '100%', borderRadius: 50 }}
+                contentFit="cover"
+              />
+            ) : (
+              <Text style={styles.avatarText}>
+                {doctor.user?.fullName?.charAt(0) || '?'}
+              </Text>
+            )}
           </View>
           <Text style={styles.doctorName}>{doctor.user?.fullName}</Text>
           
@@ -117,7 +126,7 @@ export default function DoctorDetailScreen() {
               <View style={styles.statIconBox}>
                 <Ionicons name="ribbon-outline" size={18} color={Colors.primary} />
               </View>
-              <Text style={styles.statValue}>{doctor.experienceYears} năm</Text>
+              <Text style={styles.statValue}>{doctor.experienceYears || 0} năm</Text>
               <Text style={styles.statLabel}>Kinh nghiệm</Text>
             </View>
             <View style={styles.statDivider} />
@@ -146,7 +155,7 @@ export default function DoctorDetailScreen() {
             <View>
               <Text style={styles.priceLabel}>Giá dịch vụ khám</Text>
               <Text style={styles.priceAmount}>
-                {Number(doctor.consultationFee).toLocaleString('vi-VN')} đ
+                {Number(doctor.consultationFee || 0).toLocaleString('vi-VN')} đ
               </Text>
             </View>
             <View style={styles.badge}>
@@ -196,8 +205,9 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 18,
-    fontWeight: '700',
+    fontWeight: '800',
     color: Colors.textPrimary,
+    letterSpacing: -0.3,
   },
   scrollContent: {
     paddingBottom: 110,
@@ -205,43 +215,52 @@ const styles = StyleSheet.create({
   profileCard: {
     alignItems: 'center',
     backgroundColor: Colors.white,
-    paddingVertical: 24,
+    paddingVertical: 32,
     paddingHorizontal: 20,
-    borderBottomLeftRadius: 12,
-    borderBottomRightRadius: 12,
-    borderWidth: 1,
-    borderColor: Colors.borderLight,
-    marginBottom: 16,
+    borderBottomLeftRadius: 36,
+    borderBottomRightRadius: 36,
+    shadowColor: Colors.shadow,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.15,
+    shadowRadius: 16,
+    elevation: 3,
+    marginBottom: 20,
   },
   avatarContainer: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
+    width: 108,
+    height: 108,
+    borderRadius: 54,
     backgroundColor: Colors.primaryBg,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 12,
-    borderWidth: 2,
-    borderColor: Colors.borderLight,
+    marginBottom: 18,
+    borderWidth: 4,
+    borderColor: Colors.white,
+    shadowColor: Colors.primary,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.25,
+    shadowRadius: 12,
+    elevation: 4,
   },
   avatarText: {
-    fontSize: 32,
-    fontWeight: '700',
+    fontSize: 40,
+    fontWeight: '800',
     color: Colors.primary,
   },
   doctorName: {
-    fontSize: 20,
-    fontWeight: '700',
+    fontSize: 23,
+    fontWeight: '800',
     color: Colors.textPrimary,
-    marginBottom: 6,
+    marginBottom: 8,
+    letterSpacing: -0.5,
   },
   specialtyTag: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: Colors.primaryBg,
-    paddingHorizontal: 10,
+    paddingHorizontal: 12,
     paddingVertical: 4,
-    borderRadius: 8,
+    borderRadius: 12,
     marginBottom: 6,
   },
   doctorSpecialty: {
@@ -253,7 +272,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '500',
     color: Colors.textTertiary,
-    marginBottom: 20,
+    marginBottom: 26,
   },
   statsRow: {
     flexDirection: 'row',
@@ -261,8 +280,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-around',
     width: '100%',
     backgroundColor: Colors.background,
-    borderRadius: 12,
-    paddingVertical: 12,
+    borderRadius: 22,
+    paddingVertical: 16,
     borderWidth: 1,
     borderColor: Colors.borderLight,
   },
@@ -271,20 +290,23 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   statIconBox: {
-    width: 32,
-    height: 32,
-    borderRadius: 8,
+    width: 36,
+    height: 36,
+    borderRadius: 12,
     backgroundColor: Colors.white,
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: Colors.borderLight,
+    shadowColor: Colors.shadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 1,
   },
   statValue: {
-    fontSize: 15,
-    fontWeight: '700',
+    fontSize: 16,
+    fontWeight: '800',
     color: Colors.textPrimary,
-    marginTop: 6,
+    marginTop: 8,
     marginBottom: 2,
   },
   statLabel: {
@@ -299,18 +321,24 @@ const styles = StyleSheet.create({
   },
   section: {
     backgroundColor: Colors.white,
-    borderRadius: 12,
-    padding: 16,
+    borderRadius: 24,
+    padding: 20,
     marginHorizontal: 20,
-    marginBottom: 16,
+    marginBottom: 20,
     borderWidth: 1,
     borderColor: Colors.borderLight,
+    shadowColor: Colors.shadow,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 1,
   },
   sectionTitle: {
     fontSize: 16,
-    fontWeight: '700',
+    fontWeight: '800',
     color: Colors.textPrimary,
     marginBottom: 12,
+    letterSpacing: -0.3,
   },
   bioText: {
     fontSize: 14,
@@ -320,12 +348,17 @@ const styles = StyleSheet.create({
   },
   priceSection: {
     backgroundColor: Colors.white,
-    borderRadius: 12,
-    padding: 16,
+    borderRadius: 24,
+    padding: 20,
     marginHorizontal: 20,
-    marginBottom: 16,
+    marginBottom: 20,
     borderWidth: 1,
     borderColor: Colors.borderLight,
+    shadowColor: Colors.shadow,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 1,
   },
   priceRow: {
     flexDirection: 'row',
@@ -339,8 +372,8 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   priceAmount: {
-    fontSize: 20,
-    fontWeight: '700',
+    fontSize: 22,
+    fontWeight: '800',
     color: Colors.primary,
   },
   badge: {
@@ -367,16 +400,21 @@ const styles = StyleSheet.create({
   },
   bookingBtn: {
     backgroundColor: Colors.primary,
-    borderRadius: 12,
-    paddingVertical: 14,
+    borderRadius: 18,
+    paddingVertical: 16,
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
+    shadowColor: Colors.primary,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.25,
+    shadowRadius: 12,
+    elevation: 5,
   },
   bookingBtnText: {
     color: Colors.white,
     fontSize: 16,
-    fontWeight: '700',
+    fontWeight: '800',
   },
   emptyContainer: {
     flex: 1,

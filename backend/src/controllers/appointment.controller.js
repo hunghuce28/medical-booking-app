@@ -3,7 +3,7 @@ const appointmentService = require('../services/appointment.service');
 class AppointmentController {
   async getAll(req, res, next) {
     try {
-      const result = await appointmentService.getAllAppointments(req.query);
+      const result = await appointmentService.getAllAppointments(req.query, req.user);
       res.status(200).json({ success: true, data: result });
     } catch (error) {
       next(error);
@@ -12,7 +12,8 @@ class AppointmentController {
 
   async create(req, res, next) {
     try {
-      const appointment = await appointmentService.createAppointment(req.body);
+      // Ép patientId từ token đăng nhập để chống mạo danh
+      const appointment = await appointmentService.createAppointment(req.body, req.user);
       res.status(201).json({ success: true, message: 'Đặt lịch khám thành công', data: appointment });
     } catch (error) {
       res.status(400).json({ success: false, message: error.message });
@@ -41,7 +42,7 @@ class AppointmentController {
 
   async getDashboardStats(req, res, next) {
     try {
-      const stats = await appointmentService.getDashboardStats();
+      const stats = await appointmentService.getDashboardStats(req.user);
       res.status(200).json({ success: true, data: stats });
     } catch (error) {
       next(error);

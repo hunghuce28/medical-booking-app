@@ -35,9 +35,17 @@ class SpecialtyService {
   }
 
   async updateSpecialty(id, data) {
+    // Whitelist các trường được phép cập nhật
+    const { name, description, icon, isActive } = data;
+    const updateData = {};
+    if (name !== undefined) updateData.name = name;
+    if (description !== undefined) updateData.description = description;
+    if (icon !== undefined) updateData.icon = icon;
+    if (isActive !== undefined) updateData.isActive = isActive;
+
     return await prisma.specialty.update({
       where: { id: parseInt(id) },
-      data
+      data: updateData
     });
   }
 
