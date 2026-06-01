@@ -12,7 +12,7 @@
 6. Cho phép đánh giá, phản hồi mức độ hài lòng (xếp hạng từ 1-5 sao và bình luận chi tiết) dành cho bác sĩ sau khi cuộc khám bệnh kết thúc.
 7. Nhận thông báo nhắc nhở lịch hẹn, cập nhật trạng thái cuộc hẹn trong thời gian thực nhờ công nghệ Socket.io.
 
-![Mobile Mockup Placeholder](logo.jpg)
+![Mobile Mockup](images/mobile_mockup.png)
 
 * Đối với bác sĩ (Giao diện Web Portal):
 1. Đăng nhập hệ thống, cập nhật hồ sơ chuyên môn cá nhân (bằng cấp học vị, mô tả kinh nghiệm, mức phí khám bệnh trực tiếp).
@@ -22,7 +22,7 @@
 5. Xem lại lịch sử các đánh giá, phản hồi chi tiết từ bệnh nhân để nâng cao trải nghiệm y khoa.
 6. Theo dõi bảng điều khiển số liệu thống kê Dashboard cá nhân về tổng số ca khám và doanh thu thực tế.
 
-![Web Admin Mockup Placeholder](logo.jpg)
+![Web Admin Mockup](images/web_admin_mockup.png)
 
 * Đối với quản trị viên (System Admin Web Portal):
 1. Quản lý danh mục tài khoản toàn bộ người dùng trong hệ thống (Bệnh nhân, Bác sĩ, Quản trị viên), có quyền kích hoạt hoặc khóa tài khoản khi phát hiện dấu hiệu vi phạm.
