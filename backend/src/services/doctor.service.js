@@ -7,6 +7,7 @@ const doctorRepo = require('../repositories/doctor.repository');
 const userRepo = require('../repositories/user.repository');
 const scheduleRepo = require('../repositories/schedule.repository');
 const timeSlotRepo = require('../repositories/timeslot.repository');
+const leaveRepo = require('../repositories/leave.repository');
 const auditService = require('./audit.service');
 const prisma = require('../utils/prisma');
 
@@ -134,6 +135,16 @@ class DoctorService {
 
   async getAvailableSlots(doctorId, dateStr) {
     const date = new Date(dateStr);
+    date.setHours(0, 0, 0, 0);
+
+    // 1. Kiểm tra ngày lễ
+    const isHoliday = await leaveRepo.findHolidayOnDate(date);
+    if (isHoliday) return [];
+
+    // 2. Kiểm tra bác sĩ nghỉ phép
+    const isOnLeave = await leaveRepo.findApprovedLeaveOnDate(doctorId, date);
+    if (isOnLeave) return [];
+
     const dayNames = ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'];
     const dayOfWeek = dayNames[date.getDay()];
 

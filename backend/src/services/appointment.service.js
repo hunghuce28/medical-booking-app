@@ -107,6 +107,15 @@ class AppointmentService {
           data: { status: 'BOOKED' },
         });
 
+        await tx.appointmentHistory.create({
+          data: {
+            appointmentId: appointment.id,
+            status: 'PENDING',
+            changedByUserId: currentUser ? parseInt(currentUser.id) : null,
+            note: 'Tạo mới lịch hẹn khám bệnh',
+          },
+        });
+
         return appointment;
       });
     } catch (error) {
@@ -196,6 +205,15 @@ class AppointmentService {
           data: { status: 'AVAILABLE' },
         });
       }
+
+      await tx.appointmentHistory.create({
+        data: {
+          appointmentId: appt.id,
+          status,
+          changedByUserId: currentUser ? parseInt(currentUser.id) : null,
+          note: cancelReason ? `Lý do hủy: ${cancelReason}` : `Trạng thái thay đổi thành ${status}`,
+        },
+      });
 
       return appt;
     });

@@ -6,6 +6,7 @@ jest.mock('../../src/repositories/doctor.repository');
 jest.mock('../../src/repositories/user.repository');
 jest.mock('../../src/repositories/schedule.repository');
 jest.mock('../../src/repositories/timeslot.repository');
+jest.mock('../../src/repositories/leave.repository');
 jest.mock('../../src/services/audit.service');
 jest.mock('../../src/utils/prisma', () => {
   return {
@@ -26,6 +27,7 @@ const doctorRepo = require('../../src/repositories/doctor.repository');
 const userRepo = require('../../src/repositories/user.repository');
 const scheduleRepo = require('../../src/repositories/schedule.repository');
 const timeSlotRepo = require('../../src/repositories/timeslot.repository');
+const leaveRepo = require('../../src/repositories/leave.repository');
 const auditService = require('../../src/services/audit.service');
 const prisma = require('../../src/utils/prisma');
 
@@ -36,6 +38,8 @@ describe('DoctorService', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     auditService.log.mockResolvedValue(undefined);
+    leaveRepo.findHolidayOnDate.mockResolvedValue(null);
+    leaveRepo.findApprovedLeaveOnDate.mockResolvedValue(null);
   });
 
   describe('getAllDoctors', () => {
@@ -159,6 +163,20 @@ describe('DoctorService', () => {
       scheduleRepo.findByDoctorAndDay.mockResolvedValue(null);
       const result = await doctorService.getAvailableSlots(1, '2026-06-14'); // Sunday
       expect(result).toEqual([]);
+    });
+
+    it('should return empty array when the date is a holiday', async () => {
+      leaveRepo.findHolidayOnDate.mockResolvedValue({ id: 1, name: 'New Year' });
+      const result = await doctorService.getAvailableSlots(1, '2026-06-14');
+      expect(result).toEqual([]);
+      expect(leaveRepo.findHolidayOnDate).toHaveBeenCalled();
+    });
+
+    it('should return empty array when the doctor is on leave', async () => {
+      leaveRepo.findApprovedLeaveOnDate.mockResolvedValue({ id: 1, doctorId: 1, status: 'APPROVED' });
+      const result = await doctorService.getAvailableSlots(1, '2026-06-14');
+      expect(result).toEqual([]);
+      expect(leaveRepo.findApprovedLeaveOnDate).toHaveBeenCalled();
     });
 
     it('should return generated slots with status', async () => {

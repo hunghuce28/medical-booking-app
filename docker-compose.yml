@@ -17,11 +17,14 @@ services:
       NODE_ENV: development
       PORT: 5000
       DATABASE_URL: postgresql://postgres:postgres@db:5432/medical_booking?schema=public
+      REDIS_URL: redis://redis:6379
       JWT_SECRET: ${JWT_SECRET:-docker-dev-secret-change-in-production-ab84b553c3d526978434758d4a41fae0}
       JWT_EXPIRE: 7d
       CORS_ORIGIN: "http://localhost:5173,http://localhost:3000,http://localhost:8081"
     depends_on:
       db:
+        condition: service_healthy
+      redis:
         condition: service_healthy
     volumes:
       - ./backend/src:/app/src
@@ -51,6 +54,34 @@ services:
       timeout: 5s
       retries: 5
     restart: unless-stopped
+
+  # ========================
+  # Redis Cache
+  # ========================
+  redis:
+    image: redis:7-alpine
+    container_name: medical-redis
+    ports:
+      - "6379:6379"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # ========================
+  # Web Admin Dashboard
+  # ========================
+  admin:
+    build:
+      context: ./web-admin
+    container_name: medical-admin
+    ports:
+      - "3000:80"
+    restart: unless-stopped
+    depends_on:
+      - backend
 
 volumes:
   pgdata:

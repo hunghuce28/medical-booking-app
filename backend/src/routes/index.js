@@ -10,6 +10,7 @@ const medicalRecordRoutes = require('./medical-record.routes');
 const reviewRoutes = require('./review.routes');
 const notificationRoutes = require('./notification.routes');
 const uploadRoutes = require('./upload.routes');
+const healthRoutes = require('./health.routes');
 
 router.use('/auth', authRoutes);
 router.use('/specialties', specialtyRoutes);
@@ -20,6 +21,7 @@ router.use('/medical-records', medicalRecordRoutes);
 router.use('/reviews', reviewRoutes);
 router.use('/notifications', notificationRoutes);
 router.use('/upload', uploadRoutes);
+router.use('/', healthRoutes);
 
 module.exports = router;
 
