@@ -42,11 +42,11 @@ const envConfig = {
   CLOUDINARY_API_SECRET: process.env.CLOUDINARY_API_SECRET,
 
   // Email (Optional)
-  SMTP_HOST: process.env.SMTP_HOST,
-  SMTP_PORT: parseInt(process.env.SMTP_PORT || "587", 10),
-  SMTP_USER: process.env.SMTP_USER,
-  SMTP_PASSWORD: process.env.SMTP_PASSWORD,
-  SMTP_FROM: process.env.SMTP_FROM,
+  EMAIL_HOST: process.env.EMAIL_HOST,
+  EMAIL_PORT: parseInt(process.env.EMAIL_PORT || "587", 10),
+  EMAIL_USER: process.env.EMAIL_USER,
+  EMAIL_PASS: process.env.EMAIL_PASS,
+  EMAIL_FROM: process.env.EMAIL_FROM,
 
   // Validation
   validate: validateEnv,

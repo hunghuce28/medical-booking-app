@@ -2,7 +2,7 @@
   "name": "medical-appointment-booking-backend",
   "version": "1.0.0",
   "description": "Backend API for Medical Appointment Booking System",
-  "main": "server.js",
+  "main": "src/index.js",
   "scripts": {
     "dev": "nodemon src/index.js",
     "start": "node src/index.js",

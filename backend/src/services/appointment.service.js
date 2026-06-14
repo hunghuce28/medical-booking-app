@@ -10,6 +10,7 @@ const timeSlotRepo = require('../repositories/timeslot.repository');
 const auditService = require('./audit.service');
 const notificationQueue = require('../queues/notification.queue');
 const prisma = require('../utils/prisma');
+const { Prisma } = require('@prisma/client');
 
 class AppointmentService {
   /**
@@ -305,6 +306,10 @@ class AppointmentService {
     // Revenue tháng này (tổng phí khám của các appointment COMPLETED)
     let monthlyRevenue = 0;
     try {
+      const doctorCondition = doctorFilter.doctorId
+        ? Prisma.sql`AND a."doctorId" = ${doctorFilter.doctorId}`
+        : Prisma.empty;
+
       const revenueResult = await prisma.$queryRaw`
         SELECT COALESCE(SUM(d."consultationFee"), 0)::float as revenue
         FROM appointments a
@@ -312,7 +317,7 @@ class AppointmentService {
         WHERE a.status = 'COMPLETED'
         AND a."appointmentDate" >= ${firstDayOfMonth}
         AND a."appointmentDate" < ${tomorrow}
-        ${doctorFilter.doctorId ? prisma.$queryRaw`AND a."doctorId" = ${doctorFilter.doctorId}` : prisma.$queryRaw``}
+        ${doctorCondition}
       `;
       monthlyRevenue = revenueResult[0]?.revenue || 0;
     } catch {

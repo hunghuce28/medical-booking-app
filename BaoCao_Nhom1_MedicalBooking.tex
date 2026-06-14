@@ -1,0 +1,308 @@
+\documentclass[12pt,a4paper]{report}
+\usepackage[utf8]{inputenc}
+\usepackage[T5]{fontenc}
+\usepackage[vietnamese]{babel}
+\usepackage{geometry}
+\usepackage{acronym}
+\usepackage{tcolorbox}
+\usepackage{titlesec}
+\usepackage{fancyhdr}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{longtable}
+\usepackage{float}
+\usepackage{hyperref}
+
+% Cài đặt lề
+\geometry{top=2cm, bottom=2cm, left=2.5cm, right=2cm}
+
+% Định dạng chỉ số trang
+\fancypagestyle{plain}{
+    \fancyhf{} % Xóa tất cả header/footer mặc định
+    \fancyfoot[C]{\thepage} % Hiển thị số trang ở giữa footer
+    \renewcommand{\headrulewidth}{0pt} % Không có gạch header
+    \renewcommand{\footrulewidth}{0pt} % Không có gạch footer
+}
+
+% Đặt kiểu trang mặc định
+\pagestyle{plain}
+
+\begin{document}
+
+% Trang đầu tiên với khung viền đẹp
+\begin{titlepage}
+\begin{tcolorbox}[colframe=black, colback=white, width=\textwidth, height=\textheight, sharp corners=all, boxrule=1mm, arc=5mm]
+    \begin{center}
+        \textbf{\Large TRƯỜNG ĐẠI HỌC XÂY DỰNG HÀ NỘI}\\[0.5cm]
+        \textbf{\Large Khoa Công Nghệ Thông Tin}\\[2cm]
+        
+        \includegraphics[width=0.3\textwidth]{logo.jpg}\\[1cm]
+            
+        \textbf{\huge BÁO CÁO ĐỒ ÁN}\\[0.5cm]
+        
+        \textbf{\Large PHÁT TRIỂN ỨNG DỤNG ĐA NỀN TẢNG }\\[1.0cm]
+        
+        \textbf{\huge ĐỀ TÀI: XÂY DỰNG HỆ THỐNG ĐẶT LỊCH KHÁM BỆNH TRỰC TUYẾN (MEDICAL BOOKING)}\\[1.5cm]
+        
+        \textbf{Sinh viên thực hiện:}\\[0.3cm]
+        Nhóm 1: Lớp 67CS1 \\[1.0cm]
+        \begin{itemize}
+            \centering
+            \item Hoàng Quang Duy \hspace{0.5cm} 0190267
+            \item Đỗ Văn Dũng \hspace{1.4cm} 0300467
+            \item Tô Tiến Dũng \hspace {1.35cm} 0300567
+            \item Đặng Hoàng Hải \hspace{0.85cm} 0047167
+        \end{itemize}
+
+        \vspace{1cm}
+        
+        \textbf{Giảng viên hướng dẫn:} Lê Văn Minh
+    \end{center}
+
+    \vfill
+    \begin{flushright}
+        \centering
+        Hà Nội, tháng 6 năm 2026
+    \end{flushright}
+\end{tcolorbox}
+\end{titlepage}
+
+
+% Trang lời cảm ơn
+\chapter*{Lời Cảm Ơn}
+\addcontentsline{toc}{chapter}{Lời Cảm Ơn}
+Chúng em xin gửi lời cảm ơn chân thành và sâu sắc đến thầy Lê Văn Minh, người đã tận tình hướng dẫn, đồng hành và cung cấp những kiến thức quý báu trong suốt quá trình thực hiện đồ án phát triển ứng dụng đa nền tảng. Sự nhiệt huyết, những chỉ bảo tận tâm và các góp ý giá trị của thầy đã giúp chúng em định hình kiến trúc hệ thống và hoàn thiện đồ án một cách tốt nhất. \\[1cm]
+Bên cạnh đó, chúng em xin bày tỏ lòng biết ơn đến các thầy cô trong khoa Công nghệ Thông tin, trường Đại học Xây dựng Hà Nội, những người đã tạo điều kiện thuận lợi, giảng dạy nền tảng lý thuyết vững chắc và cung cấp môi trường học tập chuyên nghiệp, góp phần quan trọng vào việc hoàn thành đồ án đúng tiến độ. \\[1cm]
+Xin chân thành cảm ơn!
+
+\newpage
+
+% Mục lục
+\tableofcontents
+\newpage
+\listoffigures
+\addcontentsline{toc}{chapter}{Danh sách hình vẽ}
+\newpage
+
+% Nội dung chính
+\chapter*{Tóm tắt nội dung đồ án}
+\addcontentsline{toc}{chapter}{\textbf{Tóm tắt nội dung đồ án}}
+\hspace{1em} Sức khỏe luôn là vốn quý nhất của con người. Trong bối cảnh công nghệ thông tin phát triển mạnh mẽ và quá trình chuyển đổi số quốc gia đang diễn ra sâu rộng, việc ứng dụng công nghệ vào y tế (E-health) trở nên vô cùng cấp thiết. Quy trình đăng ký và đặt lịch khám truyền thống tại các bệnh viện hiện nay thường tốn nhiều thời gian chờ đợi, gây quá tải cục bộ tại khu vực đón tiếp và làm giảm trải nghiệm của người bệnh.
+\\[0.4cm] 
+\indent Nhận thấy tầm quan trọng cũng như tiềm năng phát triển của lĩnh vực y tế số, nhóm đã lựa chọn đề tài xây dựng một hệ thống đặt lịch khám bệnh trực tuyến chuyên nghiệp nhằm tìm hiểu rõ hơn về quy trình phát triển phần mềm thực tế, đồng thời trau dồi kỹ năng lập trình, thiết kế hệ thống và xử lý các vấn đề thực tiễn. Đây là một bài toán thực tế cao, đòi hỏi khả năng xử lý đồng bộ từ phía ứng dụng di động cho bệnh nhân, trang web quản trị và hệ thống máy chủ backend.
+\\[0.4cm]
+\indent Sản phẩm của nhóm có tên gọi là \textbf{Medical Appointment Booking}, một giải pháp y tế số toàn diện tích hợp 3 phân hệ: Ứng dụng di động (cho Bệnh nhân đặt lịch), Web Admin (cho Bác sĩ quản lý lịch và Admin quản trị chuyên khoa), kết hợp với API Backend mạnh mẽ. Hệ thống được xây dựng trên nền tảng công nghệ hiện đại: Backend phát triển bằng Node.js với Express và Prisma ORM kết nối cơ sở dữ liệu PostgreSQL; Web Admin sử dụng ReactJS và Axios Client tích hợp cơ chế Auto-Refresh Token thông minh; Mobile ứng dụng React Native/Expo kết hợp kết nối Socket.io để truyền phát thông báo real-time. Dữ liệu đầu vào của hệ thống được kiểm duyệt nghiêm ngặt ở tầng router thông qua các schema của Joi, ngăn chặn triệt để dữ liệu lỗi và nâng cao tính bảo mật.
+
+\newpage
+
+\section*{1. Giới thiệu đề tài}
+\addcontentsline{toc}{section}{\textbf{1. Giới thiệu đề tài}}
+\hspace{1em} Trong thời đại số hóa hiện nay, nhu cầu tiếp cận dịch vụ y tế nhanh chóng và thuận tiện ngày càng được người dân chú trọng. Việc xếp hàng dài từ sáng sớm để lấy số thứ tự, đăng ký thông tin cá nhân và chờ đợi đến lượt khám tại các cơ sở y tế đang là rào cản lớn đối với cả bệnh nhân lẫn nhân viên y tế. Điều này đòi hỏi sự ra đời của các nền tảng thông minh hỗ trợ kết nối trực tiếp giữa người bệnh và bác sĩ.
+\\[0.4cm]
+\indent Nền tảng đặt lịch khám bệnh trực tuyến ra đời nhằm mục đích giải quyết triệt để bài toán xếp hàng chờ đợi, mang lại trải nghiệm cá nhân hóa tối ưu cho người bệnh bằng việc chủ động lựa chọn bác sĩ, chuyên khoa, ngày giờ khám phù hợp ngay tại nhà. Đối với các cơ sở y tế và bác sĩ, hệ thống giúp chủ động quản lý thời gian biểu khám chữa bệnh, tối ưu hóa nguồn lực nhân sự, số hóa hồ sơ bệnh án và nâng cao chất lượng dịch vụ chăm sóc khách hàng.
+\\[0.4cm]
+\indent Xuất phát từ nhu cầu thực tiễn đó, hệ thống \textbf{Medical Appointment Booking} do nhóm phát triển ra đời để cung cấp một giải pháp y tế số tích hợp có độ bảo mật cao, giao diện trực quan và khả năng vận hành ổn định trên nhiều nền tảng. Hệ thống không chỉ là một cầu nối đặt hẹn thông thường, mà còn là bước khởi đầu hướng tới việc xây dựng hồ sơ y tế số cá nhân an toàn, thông minh và thuận tiện.
+\\[0.4cm]
+\indent Báo cáo này được cấu trúc như sau: Phần 2 tập trung khảo sát nghiệp vụ và phân tích chi tiết các yêu cầu chức năng, sơ đồ Use Case cùng thiết kế cơ sở dữ liệu thực tế. Phần 3 phân tích ưu nhược điểm các giải pháp công nghệ tiêu biểu và trình bày lý do lựa chọn bộ công nghệ cốt lõi của dự án. Phần 4 đi sâu vào thiết kế kiến trúc phân lớp của hệ thống, chi tiết triển khai tầng Backend và Frontend di động, bao gồm cả các cải tiến bảo mật (Joi validation, Refresh Token) mới thực hiện. Cuối cùng, phần 5 tổng kết các kết quả đạt được và đề xuất hướng phát triển tương lai.
+
+\newpage
+
+\section*{2. Khảo sát và phân tích yêu cầu}
+\addcontentsline{toc}{section}{\textbf{2. Khảo sát và phân tích yêu cầu}}
+\hspace{1em} Hệ thống được thiết kế và triển khai chặt chẽ hướng tới 3 đối tượng người dùng chính: Bệnh nhân (Patient), Bác sĩ (Doctor) và Quản trị viên (Admin). Mỗi đối tượng có một luồng nghiệp vụ và giao diện tương tác riêng biệt nhưng liên kết chặt chẽ thông qua hệ thống cơ sở dữ liệu tập trung, đảm bảo tính bảo mật và toàn vẹn dữ liệu.
+\subsection*{2.1. Mô tả yêu cầu nghiệp vụ}
+\addcontentsline{toc}{subsection}{2.1. Mô tả yêu cầu nghiệp vụ}
+\subsubsection*{Đối với Bệnh nhân (Patient)}
+\begin{itemize}
+    \item Đăng ký tài khoản mới bằng số điện thoại/email và đăng nhập bảo mật vào hệ thống di động.
+    \item Cập nhật hồ sơ bệnh nhân mở rộng như: giới tính, ngày sinh, địa chỉ, mã bảo hiểm y tế, nhóm máu, tiền sử dị ứng, tiền sử bệnh án cá nhân.
+    \item Tìm kiếm bác sĩ linh hoạt theo tên bác sĩ hoặc lọc danh sách bác sĩ theo chuyên khoa y tế y học.
+    \item Đặt lịch hẹn khám bệnh trực tuyến bằng cách chọn bác sĩ, ngày hẹn mong muốn và khung giờ khám còn trống (TimeSlot). Nhập các triệu chứng bệnh lý ban đầu.
+    \item Theo dõi trạng thái lịch hẹn thời gian thực (Đang chờ duyệt, Đã xác nhận, Đã hoàn thành, Đã hủy).
+    \item Xem lại hồ sơ bệnh án cá nhân (chẩn đoán, đơn thuốc kê đơn, ghi chú và lịch hẹn tái khám) do bác sĩ lập sau khi hoàn thành buổi khám.
+    \item Gửi đánh giá phản hồi (rating từ 1 đến 5 sao kèm bình luận) về chất lượng phục vụ của bác sĩ sau khi lịch hẹn đã hoàn thành.
+\end{itemize}
+
+\subsubsection*{Đối với Bác sĩ (Doctor)}
+\begin{itemize}
+    \item Đăng nhập vào giao diện web/ứng dụng y tế chuyên biệt dành cho bác sĩ.
+    \item Xem danh sách các lịch hẹn khám chữa bệnh được bệnh nhân đặt, phân loại theo ngày và trạng thái lịch hẹn.
+    \item Phê duyệt (chuyển trạng thái từ PENDING sang CONFIRMED) hoặc từ chối lịch hẹn (kèm lý do hủy) của bệnh nhân.
+    \item Lập hồ sơ bệnh án y tế (Medical Record) sau khi kết thúc buổi khám bệnh: nhập thông tin chẩn đoán chi tiết, đơn thuốc điều trị kê đơn và ngày tái khám.
+    \item Quản lý khung giờ làm việc cá nhân, tự động hoặc chủ động cấu hình các khung giờ khám bệnh khả dụng.
+\end{itemize}
+
+\subsubsection*{Đối với Quản trị viên (Admin)}
+\begin{itemize}
+    \item Đăng nhập vào trang quản trị Web Admin Dashboard trung tâm.
+    \item Quản lý danh mục chuyên khoa y tế (Thêm mới chuyên khoa, cập nhật mô tả và hình ảnh minh họa chuyên khoa).
+    \item Quản lý tài khoản người dùng trong hệ thống (kích hoạt hoặc khóa tài khoản).
+    \item Quản lý thông tin hồ sơ của bác sĩ (cập nhật bằng cấp, giá dịch vụ khám, kinh nghiệm làm việc).
+    \item Theo dõi các báo cáo thống kê tổng quan về số lượng cuộc hẹn, doanh thu dịch vụ y tế và đánh giá từ bệnh nhân.
+\end{itemize}
+
+\subsection*{2.2. Use Case Diagram}
+\addcontentsline{toc}{subsection}{2.2. Use Case Diagram}
+\hspace{1em} Các sơ đồ Use Case của hệ thống đặt lịch khám bệnh trực tuyến được chia thành các nhóm nghiệp vụ chính: quản lý tài khoản và hồ sơ y tế, tìm kiếm và đặt lịch khám, quản lý lịch hẹn dành cho bác sĩ, quản trị chuyên khoa dành cho Admin.
+\\[0.4cm]
+\indent Nhóm chức năng Quản lý tài khoản và hồ sơ cho phép bệnh nhân thực hiện đăng ký, đăng nhập và cập nhật chi tiết thông tin y học. Chức năng đặt lịch hẹn liên kết chặt chẽ với TimeSlot của bác sĩ: khi bệnh nhân đặt lịch thành công, TimeSlot tương ứng sẽ được chuyển từ trạng thái \texttt{AVAILABLE} sang \texttt{BOOKED} thông qua mối quan hệ ràng buộc cơ sở dữ liệu.
+\\[0.4cm]
+\indent Đối với bác sĩ, Use Case duyệt lịch hẹn và tạo bệnh án liên kết chặt chẽ bằng quan hệ \textit{<<include>>} đối với việc hoàn thành lịch khám. Bác sĩ không thể tạo bệnh án cho các lịch hẹn đang ở trạng thái chờ duyệt (\texttt{PENDING}) hoặc đã bị hủy (\texttt{CANCELLED}). Điều này ngăn chặn việc nhập dữ liệu bệnh án sai lệch hoặc giả mạo.
+
+\subsection*{2.3. Thiết kế cơ sở dữ liệu}
+\addcontentsline{toc}{subsection}{2.3. Thiết kế cơ sở dữ liệu}
+\hspace{1em} Cơ sở dữ liệu của dự án được thiết kế chặt chẽ và nhất quán, chuẩn hóa ở dạng chuẩn 3NF sử dụng hệ quản trị cơ sở dữ liệu PostgreSQL dưới sự quản lý của Prisma ORM. Các thực thể chính bao gồm:
+\begin{itemize}
+    \item \textbf{User} và \textbf{Patient} có mối quan hệ 1:1, nghĩa là một tài khoản đăng nhập duy nhất chỉ ánh xạ đến một thông tin chi tiết bệnh nhân. Tương tự, giữa \textbf{User} và \textbf{Doctor} cũng là quan hệ 1:1. Điều này giúp tách biệt thông tin đăng nhập và thông tin nghiệp vụ y tế chuyên biệt.
+    
+    \item \textbf{Specialty} và \textbf{Doctor} có mối quan hệ 1:N. Một chuyên khoa y tế (như Nội khoa, Nhi khoa, Tai Mũi Họng) có thể có nhiều bác sĩ trực thuộc, nhưng mỗi bác sĩ chỉ thuộc về một chuyên khoa duy nhất.
+    
+    \item \textbf{Doctor} và \textbf{TimeSlot} có mối quan hệ 1:N. Một bác sĩ có nhiều khung giờ khám bệnh cụ thể được phân bổ theo ngày. Khi bệnh nhân đặt lịch hẹn, hệ thống thiết lập quan hệ 1:1 giữa \textbf{Appointment} và \textbf{TimeSlot}.
+    
+    \item \textbf{Patient} và \textbf{Appointment} có mối quan hệ 1:N. Một bệnh nhân có thể đặt nhiều lịch hẹn khám ở các thời điểm khác nhau. Giữa \textbf{Doctor} và \textbf{Appointment} cũng là quan hệ 1:N.
+    
+    \item \textbf{Appointment} và \textbf{MedicalRecord} có mối quan hệ 1:1. Một cuộc hẹn khám hoàn thành chỉ phát sinh duy nhất một hồ sơ bệnh án chứa chẩn đoán và đơn thuốc kê.
+    
+    \item \textbf{Appointment} và \textbf{Review} có mối quan hệ 1:1. Bệnh nhân chỉ có thể đánh giá một lần duy nhất cho mỗi cuộc hẹn khám đã hoàn tất.
+\end{itemize}
+
+\newpage
+
+\section*{3. Lựa chọn công nghệ}
+\addcontentsline{toc}{section}{\textbf{3. Lựa chọn công nghệ}}
+\hspace{1em} Nhóm đã tiến hành đánh giá chi tiết các giải pháp công nghệ tiêu biểu để xây dựng hệ thống hoạt động ổn định, bảo mật cao và tối ưu trải nghiệm người dùng:
+\begin{itemize}
+\item \textbf{Backend: Node.js kết hợp ExpressJS và Prisma ORM}
+\begin{itemize}
+    \item Node.js sử dụng kiến trúc bất đồng bộ (non-blocking I/O) cực kỳ tối ưu cho các hệ thống nhiều kết nối đồng thời và truyền phát dữ liệu thời gian thực như đặt lịch và gửi thông báo.
+    \item Prisma ORM hoạt động như một cầu nối mạnh mẽ giữa Node.js và PostgreSQL. Với tính năng tự động tạo migration và sinh kiểu dữ liệu (auto-generated Types), Prisma giúp ngăn chặn sai sót truy vấn, tối ưu hiệu năng và đẩy nhanh tiến độ phát triển dự án.
+\end{itemize}
+
+\item \textbf{Cơ sở dữ liệu: PostgreSQL}
+\begin{itemize}
+    \item So với MySQL hay các cơ sở dữ liệu NoSQL khác, PostgreSQL nổi bật nhờ khả năng hỗ trợ tuyệt vời cho các ràng buộc quan hệ phức tạp, tính toàn vẹn dữ liệu cực cao và hỗ trợ tốt các giao dịch ACID. Điều này là bắt buộc trong hệ thống y tế số để tránh xung đột lịch khám (hai bệnh nhân đặt trùng một khung giờ của một bác sĩ).
+\end{itemize}
+
+\item \textbf{Bảo mật và Xác thực: Bcrypt, JWT (Access và Refresh Token)}
+\begin{itemize}
+    \item Bcrypt mã hóa mật khẩu người dùng trước khi lưu trữ.
+    \item Cơ chế xác thực sử dụng JSON Web Token dạng stateless giúp giảm tải cho server. Đặc biệt, hệ thống áp dụng cơ chế token kép (Access Token có hạn dùng ngắn và Refresh Token có hạn dùng dài được lưu trữ bảo mật) giúp ngăn chặn rủi ro đánh cắp token và tối ưu trải nghiệm người dùng không phải đăng nhập lại liên tục.
+\end{itemize}
+
+\item \textbf{Frontend và Real-time: ReactJS, Expo (React Native), Socket.io}
+\begin{itemize}
+    \item Mobile App viết bằng React Native thông qua bộ công cụ Expo giúp xây dựng ứng dụng di động mượt mà cho Bệnh nhân trên cả Android và iOS từ một mã nguồn duy nhất.
+    \item Web Admin phát triển bằng ReactJS mang lại giao diện quản trị nhanh, phản hồi tức thì. Tích hợp Axios Client với hàng đợi \texttt{failedQueue} để tự động làm mới access token mà người dùng không hề hay biết.
+    \item Socket.io thiết lập kết nối song công (duplex) thời gian thực giữa máy chủ và các client, giúp bác sĩ nhận thông báo đặt lịch lập tức và bệnh nhân nhận thông báo phê duyệt lịch khám ngay trên điện thoại.
+\end{itemize}
+\end{itemize}
+
+\newpage
+
+\section*{4. Thiết kế và triển khai}
+\addcontentsline{toc}{section}{\textbf{4. Thiết kế và triển khai}}
+\subsection*{4.1. Thiết kế giao diện người dùng (UI)}
+\addcontentsline{toc}{subsection}{4.1. Thiết kế giao diện người dùng (UI)}
+\hspace{1em} Giao diện người dùng của ứng dụng di động và web được thiết kế hiện đại, lấy trải nghiệm y tế làm trung tâm. Màu sắc chủ đạo của hệ thống là sự kết hợp giữa màu xanh dương y tế lịch lãm (Medical Blue) tượng trưng cho sự tin cậy, an toàn, và màu nền trắng/xám sạch sẽ. Các phím điều khiển, bộ lọc bác sĩ và lịch hẹn được sắp xếp trực quan giúp ngay cả người lớn tuổi cũng có thể dễ dàng sử dụng. Giao diện được tối ưu hóa hiển thị trên mọi kích thước màn hình thiết bị từ điện thoại đến máy tính bảng.
+
+\subsection*{4.2. Kiến trúc hệ thống phân lớp (Clean Layered Architecture)}
+\addcontentsline{toc}{subsection}{4.2. Kiến trúc hệ thống}
+\hspace{1em} Nhằm đảm bảo tính độc lập giữa các thành phần, khả năng tái sử dụng mã nguồn và dễ dàng kiểm thử, hệ thống được thiết kế theo cấu trúc phân lớp chuẩn kết hợp mẫu thiết kế Repository Pattern:
+\begin{itemize}
+    \item \textbf{Tầng Presentation (Giao diện):} Ứng dụng di động Expo (Patient app) sử dụng Zustand để quản lý trạng thái, Axios để tương tác API và kết nối Socket.io client. Trang Web Admin sử dụng ReactJS và Axios Client nâng cấp cơ chế tự động refresh token thông minh.
+    
+    \item \textbf{Tầng Controller và Router (Điều phối):} Nơi định tuyến các API RESTful. Đặc biệt, tầng này áp dụng middleware kiểm duyệt dữ liệu đầu vào bằng Joi trước khi cho phép dữ liệu đi sâu vào hệ thống. Các controller được bọc bằng helper \texttt{asyncHandler} để xử lý tập trung mọi lỗi runtime.
+    
+    \item \textbf{Tầng Service (Nghiệp vụ):} Nơi thực hiện các logic nghiệp vụ y tế cốt lõi như kiểm tra xung đột khung giờ khám khi đặt lịch bằng cơ chế Pessimistic Locking, tính toán điểm đánh giá trung bình của bác sĩ, máy trạng thái (State Machine) quản lý chuyển đổi trạng thái lịch hẹn hợp lệ, và tạo lịch làm việc tự động cho bác sĩ.
+    
+    \item \textbf{Tầng Repository (Truy cập dữ liệu):} Hệ thống triển khai 15 repository chuyên biệt kế thừa từ lớp \texttt{BaseRepository} để trừu tượng hóa toàn bộ các tác vụ truy vấn cơ sở dữ liệu thông qua Prisma ORM. Kiến trúc này giúp tách biệt hoàn toàn logic nghiệp vụ khỏi logic truy cập dữ liệu, giảm khớp nối (coupling) giữa các lớp và hỗ trợ viết Unit Test độc lập bằng cách dễ dàng mock lớp Repository.
+\end{itemize}
+
+\subsection*{4.3. Các cải tiến kỹ thuật nâng cao}
+\addcontentsline{toc}{subsection}{4.3. Các cải tiến kỹ thuật nâng cao}
+
+\subsubsection*{4.3.1. Ngăn chặn đặt lịch trùng bằng Pessimistic Locking}
+\hspace{1em} Để ngăn chặn triệt để tình trạng hai bệnh nhân đặt cùng một khung giờ của bác sĩ tại cùng một thời điểm (Double Booking), hệ thống áp dụng cơ chế khóa bi quan (Pessimistic Write Lock) thông qua câu lệnh \texttt{SELECT ... FOR UPDATE} bên trong một database transaction. Khi một bệnh nhân bắt đầu quá trình đặt lịch, bản ghi TimeSlot tương ứng sẽ bị khóa ở cấp độ hàng (Row-level Lock), khiến mọi yêu cầu đặt lịch đồng thời khác phải chờ đợi cho đến khi giao dịch đầu tiên hoàn tất. Cơ chế này đảm bảo tính toàn vẹn dữ liệu ở mức cao nhất trong môi trường có nhiều người dùng truy cập đồng thời.
+
+\subsubsection*{4.3.2. Hệ thống cache với Redis và cơ chế Graceful Fallback}
+\hspace{1em} Nhằm tối ưu hóa hiệu năng cho các API có tần suất đọc cao (danh sách chuyên khoa, danh sách bác sĩ), hệ thống tích hợp Redis làm tầng cache trung gian thông qua middleware \texttt{cacheResponse}. Dữ liệu phản hồi được lưu vào Redis kèm thời gian sống (TTL), giúp giảm đáng kể số lượng truy vấn đến cơ sở dữ liệu PostgreSQL. Đặc biệt, hệ thống được thiết kế với cơ chế \textbf{Graceful Fallback}: khi kết nối Redis gặp sự cố hoặc không được cấu hình, toàn bộ hệ thống vẫn hoạt động bình thường bằng cách tự động bỏ qua tầng cache và truy vấn trực tiếp vào cơ sở dữ liệu.
+
+\subsubsection*{4.3.3. Hàng đợi thông báo hướng sự kiện (Event-driven Notification Queue)}
+\hspace{1em} Hệ thống áp dụng mẫu thiết kế Observer thông qua \texttt{EventEmitter} của Node.js để tách biệt hoàn toàn luồng gửi thông báo khỏi luồng xử lý chính. Khi một sự kiện nghiệp vụ xảy ra (đặt lịch thành công, bác sĩ xác nhận, hủy lịch hẹn), service layer chỉ cần đẩy thông báo vào hàng đợi (queue) và trả kết quả ngay lập tức cho client mà không chờ quá trình gửi thông báo hoàn tất. Hàng đợi sẽ xử lý việc lưu thông báo vào cơ sở dữ liệu, phát sự kiện realtime qua Socket.io và gửi email thông báo một cách phi đồng bộ (non-blocking). Kiến trúc này giúp giảm thời gian phản hồi API và cho phép dễ dàng nâng cấp lên hệ thống hàng đợi chuyên nghiệp (BullMQ, RabbitMQ) trong tương lai mà không cần sửa đổi code ở tầng service.
+
+\subsubsection*{4.3.4. Hệ thống Email tích hợp Nodemailer}
+\hspace{1em} Hệ thống tích hợp gửi email thông báo thực tế qua Nodemailer khi có các sự kiện quan trọng (đặt lịch, xác nhận, hủy lịch hẹn, khôi phục mật khẩu). Khi không cung cấp cấu hình SMTP thực tế, hệ thống tự động tạo tài khoản kiểm thử Ethereal Email và hiển thị đường dẫn xem trước email tại console, giúp lập trình viên kiểm thử dễ dàng trong quá trình phát triển.
+
+\subsubsection*{4.3.5. Bảo mật phiên đăng nhập nâng cao (Refresh Token Rotation)}
+\hspace{1em} Hệ thống sử dụng cơ chế JWT token kép: Access Token ngắn hạn (15 phút) phục vụ xác thực API, và Refresh Token dài hạn (30 ngày) được lưu trữ bảo mật trong cơ sở dữ liệu. Mỗi lần làm mới token, hệ thống áp dụng kỹ thuật \textbf{Token Rotation}: thu hồi (revoke) refresh token cũ và cấp phát token mới, ngăn chặn rủi ro tái sử dụng token bị đánh cắp. Người dùng có thể theo dõi danh sách các phiên đăng nhập đang hoạt động trên các thiết bị khác nhau và thực hiện đăng xuất cưỡng bức (Force Logout) toàn bộ thiết bị khi phát hiện hoạt động bất thường. Khi thay đổi mật khẩu, toàn bộ refresh token cũ sẽ tự động bị thu hồi.
+
+\subsubsection*{4.3.6. Hệ thống phân quyền chi tiết (Permission-Based RBAC)}
+\hspace{1em} Thay vì kiểm tra vai trò người dùng trực tiếp trong code (\texttt{if role === 'ADMIN'}), hệ thống triển khai cơ chế phân quyền dựa trên permission chi tiết tại tệp \texttt{permissions.js}. Mỗi thao tác nghiệp vụ được gán một permission string cụ thể (ví dụ: \texttt{appointment.create}, \texttt{doctor.manage\_schedule}, \texttt{record.read\_own}) và ánh xạ đến danh sách các vai trò được phép. Middleware \texttt{requirePermission} và \texttt{requireAnyPermission} kiểm tra quyền tự động trước khi cho phép truy cập API, giúp hệ thống dễ dàng mở rộng thêm vai trò mới mà không cần sửa đổi logic điều khiển.
+
+\subsubsection*{4.3.7. Hệ thống Nhật ký Kiểm toán (Audit Log)}
+\hspace{1em} Để đáp ứng yêu cầu an toàn và tuân thủ dữ liệu y tế, hệ thống ghi nhận vết lịch sử hoạt động (Audit Trail) đối với toàn bộ các thao tác thay đổi dữ liệu nhạy cảm. Mỗi bản ghi audit log lưu trữ đầy đủ thông tin: ai thực hiện (userId), hành động gì (CREATE, UPDATE, DELETE, STATUS\_CHANGE, LOGIN, LOGOUT), đối tượng nào bị thay đổi (entityType, entityId), giá trị cũ và mới (oldValue, newValue), cùng thông tin thiết bị (IP, User-Agent) và thời gian thực hiện.
+
+\subsubsection*{4.3.8. Kiểm tra đầu vào nghiêm ngặt bằng Joi Validation}
+\hspace{1em} Mọi request body gửi lên các router đều được kiểm tra kiểu dữ liệu, độ dài, định dạng email, regex số điện thoại và các giá trị enum hợp lệ thông qua các schema Joi tại \texttt{validations/index.js}. Hệ thống trả về tất cả lỗi cùng lúc (\texttt{abortEarly: false}) kèm thông báo lỗi tiếng Việt tùy chỉnh, giúp người dùng dễ dàng sửa lỗi.
+
+\subsubsection*{4.3.9. Cơ chế Tự động Làm mới Token trên Web Admin}
+\hspace{1em} Trên ứng dụng Web Admin, nhóm đã cải tiến tệp \texttt{axiosClient.js} bằng cơ chế chặn lỗi nâng cao. Khi một request API bị lỗi \texttt{401 Unauthorized} (do access token hết hạn), axiosClient sẽ tự động treo các request tiếp theo vào một hàng đợi (\texttt{failedQueue}), đồng thời gửi yêu cầu làm mới token lên backend. Khi nhận được token mới, nó tự động cập nhật store và thực thi lại toàn bộ các request đang bị treo trong hàng đợi, mang lại trải nghiệm không bị gián đoạn cho bác sĩ và quản trị viên.
+
+\subsubsection*{4.3.10. Health Check và Readiness Check}
+\hspace{1em} Hệ thống cung cấp các endpoint \texttt{/health} và \texttt{/ready} để giám sát trạng thái kết nối trực tiếp đến PostgreSQL và Redis. Các endpoint này phục vụ cho việc giám sát tự động trong môi trường triển khai container hóa (Docker, Kubernetes), đảm bảo hệ thống chỉ nhận traffic khi tất cả dịch vụ phụ thuộc đã sẵn sàng.
+
+\subsection*{4.4. Kiểm thử tự động và Tích hợp liên tục (CI/CD)}
+\addcontentsline{toc}{subsection}{4.4. Kiểm thử tự động và CI/CD}
+
+\subsubsection*{4.4.1. Bộ kiểm thử tự động Jest (96 Test Cases)}
+\hspace{1em} Dự án đi kèm bộ kiểm thử tự động bao gồm \textbf{96 test cases} được viết bằng Jest, chia thành hai cấp độ:
+\begin{itemize}
+    \item \textbf{Unit Tests (6 test suites):} Kiểm thử độc lập logic nghiệp vụ của từng service bằng cách mock lớp Repository, đảm bảo mỗi hàm xử lý đúng trong mọi tình huống biên (edge cases). Các module được kiểm thử bao gồm: Auth Service (xác thực, token rotation, đổi mật khẩu), Appointment Service (đặt lịch, chuyển trạng thái, phân quyền), Doctor Service (CRUD, lịch trực, quản lý TimeSlot), Medical Record Service (tạo bệnh án, kiểm tra quyền), Review Service (đánh giá, tính rating) và Permission Middleware (kiểm thử phân quyền RBAC).
+    
+    \item \textbf{Integration Tests (4 test suites):} Kiểm thử API đầu cuối (end-to-end) bằng Supertest, gửi HTTP request thực tế đến Express server và kiểm tra phản hồi JSON. Các API được kiểm thử bao gồm: Auth API (đăng ký, đăng nhập, refresh token), Appointment API (đặt lịch, duyệt, hủy, dashboard), Admin API (quản lý bác sĩ, bệnh nhân, chuyên khoa) và Health API (kiểm tra trạng thái hệ thống).
+\end{itemize}
+Các test được chạy bằng lệnh \texttt{npm test} (toàn bộ), \texttt{npm run test:unit} (chỉ Unit Test) hoặc \texttt{npm run test:integration} (chỉ Integration Test).
+
+\subsubsection*{4.4.2. Quy trình Tích hợp liên tục (CI/CD) với GitHub Actions}
+\hspace{1em} Dự án cấu hình GitHub Actions (\texttt{.github/workflows/ci.yml}) để tự động hóa kiểm thử phần mềm trên mỗi sự kiện \texttt{push} hoặc \texttt{pull\_request} lên nhánh \texttt{main} và \texttt{develop}. Pipeline CI bao gồm 2 job:
+\begin{itemize}
+    \item \textbf{Job 1 -- Lint \& Test:} Khởi tạo dịch vụ PostgreSQL kiểm thử tạm thời (Docker service container), cài đặt dependencies, sinh Prisma Client, chạy database migration và thực thi toàn bộ 96+ test cases tự động.
+    \item \textbf{Job 2 -- Docker Build Test:} Kiểm tra Dockerfile có thể build thành công, đảm bảo image luôn sẵn sàng triển khai.
+\end{itemize}
+
+\subsubsection*{4.4.3. Triển khai hệ thống bằng Docker Compose}
+\hspace{1em} Toàn bộ hệ thống được đóng gói và triển khai bằng Docker Compose với một lệnh duy nhất (\texttt{docker compose up -d --build}), bao gồm 4 dịch vụ: Backend API Server (Node.js), PostgreSQL Database, Redis Cache Server và Web Admin Dashboard (Nginx). Mỗi dịch vụ được cấu hình health check để đảm bảo khởi động đúng thứ tự phụ thuộc. Backend sử dụng multi-stage Dockerfile tối ưu cho cả môi trường phát triển (development) và sản xuất (production).
+
+\subsubsection*{4.4.4. Thiết kế kịch bản kiểm thử thủ công (Test Case Specification)}
+\hspace{1em} Bên cạnh kiểm thử tự động, nhóm đã thiết lập bảng danh sách kịch bản kiểm thử chi tiết (\textbf{Test Case Specification}) trong tệp \texttt{TestCase\_Nhom1\_MedicalBooking.xlsx}, bao gồm 42 kịch bản kiểm thử chức năng (UI/UX) chia thành 7 phân hệ (tương ứng với 7 sheets):
+\begin{itemize}
+    \item \textbf{Phân hệ Đăng ký tài khoản (7 Test Cases):} Kiểm thử chức năng đăng ký tài khoản bệnh nhân (dữ liệu hợp lệ, email đã tồn tại, mật khẩu không khớp, email/SĐT sai định dạng, bỏ trống trường bắt buộc, mật khẩu yếu).
+    
+    \item \textbf{Phân hệ Đăng nhập và Xác thực (7 Test Cases):} Kiểm thử đăng nhập (thành công, sai mật khẩu, email không tồn tại, để trống trường), kiểm soát bảo mật truy cập trang quản trị không có token, cơ chế tự động làm mới access token (Silent Refresh) và đăng xuất khi hết hạn phiên làm việc.
+    
+    \item \textbf{Phân hệ Danh mục và Bác sĩ (6 Test Cases):} Kiểm thử tìm kiếm và lọc bác sĩ theo tên/chuyên khoa, xem chi tiết thông tin bác sĩ, bác sĩ tự cập nhật hồ sơ chuyên môn, bác sĩ thiết lập lịch trực cố định, bệnh nhân truy xuất danh sách khung giờ khám trống (available slots) theo ngày và xử lý ID bác sĩ không tồn tại.
+    
+    \item \textbf{Phân hệ Đặt lịch và Hủy lịch (8 Test Cases):} Kiểm thử đặt lịch khám thành công, chặn chọn ngày quá khứ, chặn để trống lý do khám, kiểm tra cơ chế chống đặt trùng khung giờ đồng thời (Pessimistic Locking), bệnh nhân hủy lịch khám (PENDING/CONFIRMED), chặn hủy lịch khám đã hoàn thành (COMPLETED), chặn hủy lịch sát giờ khám (dưới 1 giờ) và xem danh sách lịch hẹn cá nhân.
+    
+    \item \textbf{Phân hệ Khám bệnh và Bệnh án (4 Test Cases):} Kiểm thử quy trình bác sĩ duyệt/xác nhận lịch khám, bác sĩ lập hồ sơ bệnh án (nhập chẩn đoán, đơn thuốc, ngày tái khám) khi hoàn thành khám, bệnh nhân xem kết quả bệnh án và bác sĩ truy xuất lịch sử bệnh án của bệnh nhân.
+    
+    \item \textbf{Phân hệ Đánh giá và Thông báo (6 Test Cases):} Kiểm thử bệnh nhân gửi đánh giá bác sĩ sau cuộc khám hoàn tất, chặn đánh giá sớm, nhận thông báo thời gian thực qua Socket.io khi có lịch hẹn mới, đánh dấu đã đọc thông báo, tải lên ảnh đại diện hợp lệ và chặn tệp tải lên sai định dạng.
+    
+    \item \textbf{Phân hệ Quản trị hệ thống (4 Test Cases):} Kiểm thử Admin tạo mới tài khoản/hồ sơ bác sĩ, khóa/mở khóa tài khoản người dùng, xem dashboard thống kê doanh thu/lịch khám và phân quyền vai trò người dùng (PATIENT $\rightarrow$ ADMIN).
+\end{itemize}
+Tất cả các kịch bản kiểm thử đều được mô tả rõ ràng về: Mã kịch bản (Test Case ID), tên ca kiểm thử, điều kiện tiên quyết, các bước thực hiện, dữ liệu đầu vào, kết quả kỳ vọng, kết quả thực tế thu được và trạng thái kiểm thử (\texttt{PASSED}).
+
+\newpage
+
+\section*{5. Kết luận}
+\addcontentsline{toc}{section}{\textbf{5. Kết luận}}
+\hspace{1em} Đồ án \textbf{Medical Appointment Booking} đã hoàn thành xuất sắc các mục tiêu đề ra, xây dựng thành công một hệ thống đặt lịch khám bệnh trực tuyến toàn diện, chuyên nghiệp và có độ thực tiễn cao. Hệ thống vượt qua cấu trúc của một ứng dụng CRUD thông thường thông qua việc áp dụng các kỹ thuật nâng cao cấp doanh nghiệp: kiến trúc phân lớp Clean Architecture kết hợp Repository Pattern, cơ chế chống đặt lịch trùng bằng Pessimistic Locking, tầng cache Redis với Graceful Fallback, hàng đợi thông báo hướng sự kiện (EventEmitter), hệ thống phân quyền Permission-Based RBAC, nhật ký kiểm toán Audit Log và bảo mật phiên đăng nhập bằng Refresh Token Rotation.
+\\[0.4cm]
+\indent Về mặt đảm bảo chất lượng, dự án đi kèm bộ kiểm thử tự động 96 test cases (Unit Test và Integration Test) sử dụng Jest và Supertest, được tích hợp vào quy trình CI/CD tự động trên GitHub Actions. Toàn bộ hệ thống được đóng gói bằng Docker Compose để triển khai chỉ với một lệnh duy nhất, bao gồm 4 dịch vụ: Backend API, PostgreSQL, Redis và Web Admin Dashboard.
+\\[0.4cm]
+\indent Tuy nhiên, hệ thống vẫn có một số điểm cần cải tiến trong tương lai để hướng tới một ứng dụng y tế số thông minh toàn diện. Quy trình thanh toán chi phí khám bệnh hiện tại mới chỉ dừng lại ở mức ghi nhận thông tin, chưa tích hợp cổng thanh toán trực tuyến. Khung giờ làm việc của bác sĩ cũng cần linh hoạt hơn để xử lý các trường hợp nghỉ phép đột xuất hoặc đổi ca trực trực tuyến.
+\\[0.4cm]
+\indent Trong tương lai, nhóm dự kiến phát triển các tính năng nâng cao bao gồm: tích hợp cổng thanh toán điện tử VNPay/Momo để bệnh nhân có thể thanh toán phí khám trước khi đến viện; xây dựng kênh tư vấn trực tuyến (Telehealth) tích hợp chat thời gian thực và cuộc gọi video thông qua WebRTC; áp dụng trí tuệ nhân tạo (AI Chatbot) để hỗ trợ chẩn đoán triệu chứng ban đầu và tự động gợi ý chuyên khoa phù hợp cho người bệnh.
+
+\end{document}
