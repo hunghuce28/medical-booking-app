@@ -1,45 +1,59 @@
-const prisma = require('../utils/prisma');
+/**
+ * Doctor Service — Refactored with Repository Pattern
+ */
+
 const bcrypt = require('bcryptjs');
+const doctorRepo = require('../repositories/doctor.repository');
+const userRepo = require('../repositories/user.repository');
+const scheduleRepo = require('../repositories/schedule.repository');
+const timeSlotRepo = require('../repositories/timeslot.repository');
+const auditService = require('./audit.service');
+const prisma = require('../utils/prisma');
 
 class DoctorService {
   async getAllDoctors(query) {
-    const { specialtyId, limit } = query;
-    let filter = {}; // Bỏ isActive: true để admin thấy cả bác sĩ đã khóa
-    
+    const { specialtyId, search, limit, page = 1 } = query;
+    let filter = {};
+
     if (specialtyId) {
       filter.specialtyId = parseInt(specialtyId);
     }
 
-    return await prisma.doctor.findMany({
-      where: filter,
+    // Tìm kiếm theo tên bác sĩ
+    if (search) {
+      filter.user = {
+        fullName: { contains: search, mode: 'insensitive' },
+      };
+    }
+
+    if (limit && !query.page) {
+      // Legacy: chỉ có limit, không phân trang
+      return doctorRepo.findAllWithUser(filter, { take: parseInt(limit) });
+    }
+
+    // Có phân trang
+    return doctorRepo.findManyWithCount(filter, {
       include: {
         user: { select: { fullName: true, email: true, phone: true, avatar: true } },
-        specialty: { select: { name: true, icon: true } }
+        specialty: { select: { name: true, icon: true } },
       },
-      take: limit ? parseInt(limit) : undefined,
-      orderBy: { rating: 'desc' }
+      orderBy: { rating: 'desc' },
+      page,
+      limit: limit || 20,
     });
   }
 
   async getDoctorById(id) {
-    const doctor = await prisma.doctor.findUnique({
-      where: { id: parseInt(id) },
-      include: {
-        user: { select: { fullName: true, email: true, phone: true, avatar: true } },
-        specialty: true,
-        schedules: true
-      }
-    });
-
+    const doctor = await doctorRepo.findByIdWithDetails(id);
     if (!doctor) throw new Error('Không tìm thấy bác sĩ');
     return doctor;
   }
 
-  async createDoctor(data) {
+  async createDoctor(data, req = null) {
     const { email, password, fullName, phone, specialtyId } = data;
 
     // 1. Kiểm tra email
-    const existingUser = await prisma.user.findUnique({ where: { email } });
+    const existingUser = await userRepo.findByEmail(email);
     if (existingUser) {
       throw new Error('Email đã được sử dụng!');
     }
@@ -51,66 +65,71 @@ class DoctorService {
     // 3. Tạo User và Doctor dùng Transaction
     const result = await prisma.$transaction(async (tx) => {
       const user = await tx.user.create({
-        data: {
-          email,
-          phone,
-          fullName,
-          passwordHash,
-          role: 'DOCTOR',
-        }
+        data: { email, phone, fullName, passwordHash, role: 'DOCTOR' },
       });
 
       const doctor = await tx.doctor.create({
-        data: {
-          userId: user.id,
-          specialtyId: parseInt(specialtyId),
-        }
+        data: { userId: user.id, specialtyId: parseInt(specialtyId) },
       });
 
       const { passwordHash: _, ...safeUser } = user;
       return { user: safeUser, doctor };
     });
 
+    // Audit log
+    auditService.log({
+      userId: req?.user?.id,
+      action: 'CREATE',
+      entityType: 'Doctor',
+      entityId: result.doctor.id,
+      newValue: { email, fullName, specialtyId },
+      req,
+    });
+
     return result;
   }
 
-  async updateDoctor(id, data) {
+  async updateDoctor(id, data, req = null) {
     const { fullName, phone, specialtyId, isActive } = data;
-    
-    // Tìm doctor hiện tại để lấy userId
-    const currentDoctor = await prisma.doctor.findUnique({ where: { id: parseInt(id) } });
+
+    const currentDoctor = await doctorRepo.findById(id);
     if (!currentDoctor) throw new Error('Không tìm thấy bác sĩ');
 
+    const oldValue = { ...currentDoctor };
+
     const result = await prisma.$transaction(async (tx) => {
-      // Cập nhật thông tin User
       if (fullName !== undefined || phone !== undefined) {
         await tx.user.update({
           where: { id: currentDoctor.userId },
-          data: { fullName, phone }
+          data: { fullName, phone },
         });
       }
 
-      // Cập nhật thông tin Doctor
       let docData = {};
       if (specialtyId !== undefined) docData.specialtyId = parseInt(specialtyId);
       if (isActive !== undefined) docData.isActive = isActive;
 
-      const updatedDoctor = await tx.doctor.update({
+      return tx.doctor.update({
         where: { id: parseInt(id) },
-        data: docData
+        data: docData,
       });
+    });
 
-      return updatedDoctor;
+    auditService.log({
+      userId: req?.user?.id,
+      action: 'UPDATE',
+      entityType: 'Doctor',
+      entityId: parseInt(id),
+      oldValue,
+      newValue: data,
+      req,
     });
 
     return result;
   }
 
   async getSchedules(doctorId) {
-    return await prisma.doctorSchedule.findMany({
-      where: { doctorId: parseInt(doctorId), isActive: true },
-      orderBy: { dayOfWeek: 'asc' }
-    });
+    return scheduleRepo.findByDoctorId(doctorId);
   }
 
   async getAvailableSlots(doctorId, dateStr) {
@@ -119,11 +138,8 @@ class DoctorService {
     const dayOfWeek = dayNames[date.getDay()];
 
     // 1. Tìm lịch làm việc theo thứ trong tuần
-    const schedule = await prisma.doctorSchedule.findFirst({
-      where: { doctorId: parseInt(doctorId), dayOfWeek, isActive: true }
-    });
-
-    if (!schedule) return []; // Bác sĩ không làm việc ngày này
+    const schedule = await scheduleRepo.findByDoctorAndDay(doctorId, dayOfWeek);
+    if (!schedule) return [];
 
     // 2. Sinh ra danh sách slot từ startTime đến endTime
     const slots = [];
@@ -141,21 +157,10 @@ class DoctorService {
       currentMin += duration;
     }
 
-    // 3. Tìm các slot đã được đặt (BOOKED) trong ngày này
-    const bookedSlots = await prisma.timeSlot.findMany({
-      where: { doctorId: parseInt(doctorId), date, status: { not: 'AVAILABLE' } }
-    });
-    const bookedTimes = new Set(bookedSlots.map(s => s.startTime));
-
-    // 4. Tìm hoặc tạo TimeSlot và gắn trạng thái
+    // 3. Tìm hoặc tạo TimeSlot và gắn trạng thái
     const result = [];
     for (const slot of slots) {
-      // Fix B4: Sử dụng upsert để tránh lỗi P2002 khi có nhiều request đồng thời tạo slot
-      let timeSlot = await prisma.timeSlot.upsert({
-        where: { doctorId_date_startTime: { doctorId: parseInt(doctorId), date, startTime: slot.startTime } },
-        update: {},
-        create: { doctorId: parseInt(doctorId), date, startTime: slot.startTime, endTime: slot.endTime, status: 'AVAILABLE' }
-      });
+      let timeSlot = await timeSlotRepo.upsertSlot(doctorId, date, slot.startTime, slot.endTime);
 
       result.push({
         id: timeSlot.id,
@@ -168,76 +173,65 @@ class DoctorService {
     return result;
   }
 
-  async updateSchedules(doctorId, schedules) {
+  async updateSchedules(doctorId, schedules, req = null) {
     const docId = parseInt(doctorId);
-    const doctor = await prisma.doctor.findUnique({ where: { id: docId } });
+    const doctor = await doctorRepo.findById(docId);
     if (!doctor) throw new Error('Không tìm thấy bác sĩ');
 
-    // Chạy transaction
-    return await prisma.$transaction(async (tx) => {
+    const result = await prisma.$transaction(async (tx) => {
       const updatedSchedules = [];
       const updatedDays = [];
 
       for (const sched of schedules) {
-        const { dayOfWeek, startTime, endTime, slotDurationMinutes = 30, isActive = true } = sched;
-        updatedDays.push(dayOfWeek);
-
-        const item = await tx.doctorSchedule.upsert({
-          where: {
-            doctorId_dayOfWeek: {
-              doctorId: docId,
-              dayOfWeek
-            }
-          },
-          update: {
-            startTime,
-            endTime,
-            slotDurationMinutes: parseInt(slotDurationMinutes),
-            isActive
-          },
-          create: {
-            doctorId: docId,
-            dayOfWeek,
-            startTime,
-            endTime,
-            slotDurationMinutes: parseInt(slotDurationMinutes),
-            isActive
-          }
-        });
+        updatedDays.push(sched.dayOfWeek);
+        const item = await scheduleRepo.upsertSchedule(docId, sched, tx);
         updatedSchedules.push(item);
       }
 
-      // Vô hiệu hóa các ngày khác không được truyền lên
-      await tx.doctorSchedule.updateMany({
-        where: {
-          doctorId: docId,
-          dayOfWeek: { notIn: updatedDays }
-        },
-        data: {
-          isActive: false
-        }
-      });
+      await scheduleRepo.deactivateExcept(docId, updatedDays, tx);
 
       return updatedSchedules;
     });
+
+    auditService.log({
+      userId: req?.user?.id,
+      action: 'UPDATE',
+      entityType: 'DoctorSchedule',
+      entityId: docId,
+      newValue: { schedules },
+      req,
+    });
+
+    return result;
   }
 
-  async deleteDoctor(id) {
-    // Fix B13: Soft delete cả Doctor và User
-    const doctor = await prisma.doctor.findUnique({ where: { id: parseInt(id) } });
+  async deleteDoctor(id, req = null) {
+    const doctor = await doctorRepo.findById(id);
     if (!doctor) throw new Error('Không tìm thấy bác sĩ');
 
-    return await prisma.$transaction(async (tx) => {
+    const result = await prisma.$transaction(async (tx) => {
       await tx.user.update({
         where: { id: doctor.userId },
-        data: { isActive: false }
+        data: { isActive: false },
       });
-      
-      return await tx.doctor.update({
+
+      return tx.doctor.update({
         where: { id: parseInt(id) },
-        data: { isActive: false }
+        data: { isActive: false },
       });
     });
+
+    auditService.log({
+      userId: req?.user?.id,
+      action: 'DELETE',
+      entityType: 'Doctor',
+      entityId: parseInt(id),
+      oldValue: { isActive: true },
+      newValue: { isActive: false },
+      req,
+    });
+
+    return result;
   }
 }
 

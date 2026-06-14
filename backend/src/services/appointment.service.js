@@ -1,16 +1,26 @@
+/**
+ * Appointment Service — Refactored with Repository Pattern
+ * Handles booking, status management, and dashboard statistics
+ */
+
+const appointmentRepo = require('../repositories/appointment.repository');
+const doctorRepo = require('../repositories/doctor.repository');
+const patientRepo = require('../repositories/patient.repository');
+const timeSlotRepo = require('../repositories/timeslot.repository');
+const auditService = require('./audit.service');
+const notificationQueue = require('../queues/notification.queue');
 const prisma = require('../utils/prisma');
-const { createNotification } = require('./notification.service');
 
 class AppointmentService {
   /**
-   * Lấy danh sách tất cả lịch khám (Admin xem)
+   * Lấy danh sách tất cả lịch khám (Admin/Bác sĩ xem)
    */
   async getAllAppointments(query, currentUser = null) {
     const { status, doctorId, date, page = 1, limit = 20 } = query;
     let filter = {};
 
     if (currentUser && currentUser.role === 'DOCTOR') {
-      const doctor = await prisma.doctor.findUnique({ where: { userId: currentUser.id } });
+      const doctor = await doctorRepo.findByUserId(currentUser.id);
       if (doctor) filter.doctorId = doctor.id;
     } else if (doctorId) {
       filter.doctorId = parseInt(doctorId);
@@ -19,58 +29,55 @@ class AppointmentService {
     if (status) filter.status = status;
     if (date) filter.appointmentDate = new Date(date);
 
-    const skip = (parseInt(page) - 1) * parseInt(limit);
-
-    const [appointments, total] = await Promise.all([
-      prisma.appointment.findMany({
-        where: filter,
-        include: {
-          patient: {
-            include: {
-              user: { select: { fullName: true, phone: true, email: true } }
-            }
+    return appointmentRepo.findManyWithCount(filter, {
+      include: {
+        patient: {
+          include: {
+            user: { select: { fullName: true, phone: true, email: true } },
           },
-          doctor: {
-            include: {
-              user: { select: { fullName: true } },
-              specialty: { select: { name: true } }
-            }
-          },
-          timeSlot: true,
         },
-        orderBy: { createdAt: 'desc' },
-        skip,
-        take: parseInt(limit),
-      }),
-      prisma.appointment.count({ where: filter })
-    ]);
-
-    return { appointments, total, page: parseInt(page), limit: parseInt(limit) };
+        doctor: {
+          include: {
+            user: { select: { fullName: true } },
+            specialty: { select: { name: true } },
+          },
+        },
+        timeSlot: true,
+      },
+      orderBy: { createdAt: 'desc' },
+      page,
+      limit,
+    });
   }
 
   /**
-   * Bệnh nhân đặt lịch khám
+   * Bệnh nhân đặt lịch khám — với Pessimistic Locking chống Double Booking
    */
-  async createAppointment(data, currentUser = null) {
+  async createAppointment(data, currentUser = null, req = null) {
     const { doctorId, timeSlotId, appointmentDate, symptoms } = data;
 
     // Ép patientId từ token đăng nhập (chống mạo danh)
     let patientId = data.patientId;
     if (currentUser) {
-      const patient = await prisma.patient.findUnique({ where: { userId: currentUser.id } });
+      const patient = await patientRepo.findByUserId(currentUser.id);
       if (!patient) throw new Error('Không tìm thấy hồ sơ bệnh nhân của bạn');
       patientId = patient.id;
     }
     if (!patientId) throw new Error('Thiếu thông tin bệnh nhân');
 
-    // Đưa TẤT CẢ kiểm tra vào trong Transaction để chống Race Condition
+    // Transaction với Pessimistic Locking (SELECT ... FOR UPDATE)
     let result;
     try {
       result = await prisma.$transaction(async (tx) => {
-        // 1. Kiểm tra TimeSlot còn trống không (trong transaction → có khóa)
-        const timeSlot = await tx.timeSlot.findUnique({ where: { id: parseInt(timeSlotId) } });
-        if (!timeSlot) throw new Error('Khung giờ không tồn tại');
-        if (timeSlot.status !== 'AVAILABLE') throw new Error('Khung giờ này đã được đặt');
+        // 1. Pessimistic Lock: SELECT FOR UPDATE trên TimeSlot
+        const lockedSlot = await tx.$queryRaw`
+          SELECT * FROM time_slots 
+          WHERE id = ${parseInt(timeSlotId)} 
+          FOR UPDATE
+        `;
+        
+        if (!lockedSlot[0]) throw new Error('Khung giờ không tồn tại');
+        if (lockedSlot[0].status !== 'AVAILABLE') throw new Error('Khung giờ này đã được đặt');
 
         // 2. Kiểm tra bệnh nhân có lịch trùng không
         const existingAppointment = await tx.appointment.findFirst({
@@ -78,8 +85,8 @@ class AppointmentService {
             patientId: parseInt(patientId),
             doctorId: parseInt(doctorId),
             appointmentDate: new Date(appointmentDate),
-            status: { in: ['PENDING', 'CONFIRMED'] }
-          }
+            status: { in: ['PENDING', 'CONFIRMED'] },
+          },
         });
         if (existingAppointment) throw new Error('Bạn đã có lịch khám vào ngày này rồi');
 
@@ -103,42 +110,23 @@ class AppointmentService {
         return appointment;
       });
     } catch (error) {
-      if (error.code === 'P2002') throw new Error('Khung giờ này vừa có người đặt mất rồi, vui lòng chọn giờ khác!');
+      if (error.code === 'P2002')
+        throw new Error('Khung giờ này vừa có người đặt mất rồi, vui lòng chọn giờ khác!');
       throw error;
     }
 
-    // Tạo thông báo tự động (chạy background sau khi đặt lịch thành công)
-    prisma.appointment.findUnique({
-      where: { id: result.id },
-      include: {
-        patient: { include: { user: { select: { id: true, fullName: true } } } },
-        doctor: { include: { user: { select: { id: true, fullName: true } } } },
-        timeSlot: true
-      }
-    }).then(async (details) => {
-      if (details) {
-        const timeStr = `${details.timeSlot.startTime} - ${details.timeSlot.endTime}`;
-        const dateStr = new Date(details.appointmentDate).toLocaleDateString('vi-VN');
+    // Audit log
+    auditService.log({
+      userId: currentUser?.id,
+      action: 'CREATE',
+      entityType: 'Appointment',
+      entityId: result.id,
+      newValue: { doctorId, timeSlotId, appointmentDate, symptoms },
+      req,
+    });
 
-        // Gửi cho bệnh nhân
-        await createNotification({
-          userId: details.patient.user.id,
-          title: 'Đặt lịch khám thành công',
-          message: `Lịch hẹn khám với bác sĩ ${details.doctor.user.fullName} vào lúc ${timeStr} ngày ${dateStr} đã được gửi đi và đang chờ xác nhận.`,
-          type: 'APPOINTMENT_CREATED',
-          data: { appointmentId: result.id }
-        });
-
-        // Gửi cho bác sĩ
-        await createNotification({
-          userId: details.doctor.user.id,
-          title: 'Lịch khám mới chờ duyệt',
-          message: `Bệnh nhân ${details.patient.user.fullName} đã đặt lịch khám vào lúc ${timeStr} ngày ${dateStr}.`,
-          type: 'APPOINTMENT_CREATED',
-          data: { appointmentId: result.id }
-        });
-      }
-    }).catch(err => console.error('Lỗi khi tạo thông báo đặt lịch:', err));
+    // Notification Queue (non-blocking)
+    this._sendBookingNotifications(result.id);
 
     return result;
   }
@@ -146,7 +134,7 @@ class AppointmentService {
   /**
    * Cập nhật trạng thái lịch khám (Admin/Bác sĩ duyệt/từ chối/hoàn thành, Bệnh nhân tự hủy)
    */
-  async updateStatus(id, status, cancelReason = null, currentUser = null) {
+  async updateStatus(id, status, cancelReason = null, currentUser = null, req = null) {
     // Bảng chuyển đổi trạng thái hợp lệ (State Machine)
     const VALID_TRANSITIONS = {
       PENDING: ['CONFIRMED', 'REJECTED', 'CANCELLED'],
@@ -157,14 +145,12 @@ class AppointmentService {
       NO_SHOW: [],
     };
 
-    const appointment = await prisma.appointment.findUnique({
-      where: { id: parseInt(id) },
-      include: {
-        patient: true,
-        doctor: true,
-      }
+    const appointment = await appointmentRepo.findById(id, {
+      include: { patient: true, doctor: true },
     });
     if (!appointment) throw new Error('Không tìm thấy lịch khám');
+
+    const oldStatus = appointment.status;
 
     // Kiểm tra chuyển trạng thái hợp lệ
     const allowedStatuses = VALID_TRANSITIONS[appointment.status] || [];
@@ -182,7 +168,6 @@ class AppointmentService {
           throw new Error('Bạn không có quyền chỉnh sửa lịch khám của người khác!');
         }
       } else if (currentUser.role === 'DOCTOR') {
-        // Bác sĩ chỉ được duyệt/từ chối/hoàn thành lịch của CHÍNH MÌNH
         if (appointment.doctor.userId !== currentUser.id) {
           throw new Error('Bạn không có quyền thao tác trên lịch khám của bác sĩ khác!');
         }
@@ -200,8 +185,8 @@ class AppointmentService {
         include: {
           patient: { include: { user: { select: { id: true } } } },
           doctor: { include: { user: { select: { id: true, fullName: true } } } },
-          timeSlot: true
-        }
+          timeSlot: true,
+        },
       });
 
       // Nếu hủy hoặc không đến → trả lại TimeSlot thành AVAILABLE
@@ -215,57 +200,18 @@ class AppointmentService {
       return appt;
     });
 
-    // Tạo thông báo cập nhật trạng thái (chạy background)
-    Promise.resolve().then(async () => {
-      const timeStr = `${updatedAppointment.timeSlot.startTime} - ${updatedAppointment.timeSlot.endTime}`;
-      const dateStr = new Date(updatedAppointment.appointmentDate).toLocaleDateString('vi-VN');
-      
-      let title = '';
-      let message = '';
-      let type = 'GENERAL';
-      let targetUserId = updatedAppointment.patient.user.id; // Mặc định gửi cho bệnh nhân
+    // Audit log — ghi nhận thay đổi trạng thái
+    auditService.logStatusChange({
+      userId: currentUser?.id,
+      entityType: 'Appointment',
+      entityId: parseInt(id),
+      oldStatus,
+      newStatus: status,
+      req,
+    });
 
-      if (status === 'CONFIRMED') {
-        title = 'Lịch khám đã được xác nhận';
-        message = `Lịch hẹn khám với bác sĩ ${updatedAppointment.doctor.user.fullName} vào lúc ${timeStr} ngày ${dateStr} đã được xác nhận.`;
-        type = 'APPOINTMENT_CONFIRMED';
-      } else if (status === 'REJECTED') {
-        title = 'Lịch khám bị từ chối';
-        message = `Lịch hẹn khám với bác sĩ ${updatedAppointment.doctor.user.fullName} vào lúc ${timeStr} ngày ${dateStr} đã bị từ chối.${cancelReason ? ` Lý do: ${cancelReason}` : ''}`;
-        type = 'APPOINTMENT_REJECTED';
-      } else if (status === 'CANCELLED') {
-        title = 'Lịch khám đã bị hủy';
-        message = `Lịch hẹn khám với bác sĩ ${updatedAppointment.doctor.user.fullName} vào lúc ${timeStr} ngày ${dateStr} đã bị hủy.${cancelReason ? ` Lý do: ${cancelReason}` : ''}`;
-        type = 'APPOINTMENT_CANCELLED';
-        
-        // Gửi thông báo cho bác sĩ về việc hủy lịch
-        await createNotification({
-          userId: updatedAppointment.doctor.user.id,
-          title: 'Lịch khám đã bị hủy',
-          message: `Lịch hẹn khám của bệnh nhân vào lúc ${timeStr} ngày ${dateStr} đã bị hủy.${cancelReason ? ` Lý do: ${cancelReason}` : ''}`,
-          type: 'APPOINTMENT_CANCELLED',
-          data: { appointmentId: updatedAppointment.id }
-        });
-      } else if (status === 'COMPLETED') {
-        title = 'Khám bệnh hoàn thành';
-        message = `Lịch hẹn khám với bác sĩ ${updatedAppointment.doctor.user.fullName} đã hoàn thành. Bạn có thể xem kết quả khám và đơn thuốc của mình.`;
-        type = 'APPOINTMENT_COMPLETED';
-      } else if (status === 'NO_SHOW') {
-        title = 'Vắng mặt không báo trước';
-        message = `Lịch hẹn khám với bác sĩ ${updatedAppointment.doctor.user.fullName} vào lúc ${timeStr} ngày ${dateStr} đã bị đánh dấu là vắng mặt vì bạn không đến đúng giờ. Vui lòng liên hệ bác sĩ nếu có sai sót.`;
-        type = 'GENERAL';
-      }
-
-      if (title && message) {
-        await createNotification({
-          userId: targetUserId,
-          title,
-          message,
-          type,
-          data: { appointmentId: updatedAppointment.id }
-        });
-      }
-    }).catch(err => console.error('Lỗi khi tạo thông báo cập nhật trạng thái:', err));
+    // Notification Queue (non-blocking)
+    this._sendStatusNotifications(updatedAppointment, status, cancelReason);
 
     return updatedAppointment;
   }
@@ -275,46 +221,17 @@ class AppointmentService {
    */
   async getPatientAppointments(userId, query) {
     const { status, page = 1, limit = 20 } = query;
-    const patient = await prisma.patient.findUnique({ where: { userId: parseInt(userId) } });
-    if (!patient) {
-      return { appointments: [], total: 0, page: parseInt(page), limit: parseInt(limit) };
-    }
-
-    let filter = { patientId: patient.id };
-    if (status) filter.status = status;
-
-    const skip = (parseInt(page) - 1) * parseInt(limit);
-
-    const [appointments, total] = await Promise.all([
-      prisma.appointment.findMany({
-        where: filter,
-        include: {
-          doctor: {
-            include: {
-              user: { select: { fullName: true, avatar: true } },
-              specialty: { select: { name: true } }
-            }
-          },
-          timeSlot: true,
-          medicalRecord: true,
-        },
-        orderBy: { appointmentDate: 'desc' },
-        skip,
-        take: parseInt(limit),
-      }),
-      prisma.appointment.count({ where: filter })
-    ]);
-
-    return { appointments, total, page: parseInt(page), limit: parseInt(limit) };
+    const filter = status ? { status } : {};
+    return appointmentRepo.findByPatientId(userId, filter, { page, limit });
   }
 
   /**
-   * Lấy thống kê cho Dashboard
+   * Lấy thống kê cho Dashboard (mở rộng: revenue, top doctors, cancellation rate)
    */
   async getDashboardStats(currentUser = null) {
     let doctorFilter = {};
     if (currentUser && currentUser.role === 'DOCTOR') {
-      const doctor = await prisma.doctor.findUnique({ where: { userId: currentUser.id } });
+      const doctor = await doctorRepo.findByUserId(currentUser.id);
       if (doctor) doctorFilter = { doctorId: doctor.id };
     }
 
@@ -323,44 +240,106 @@ class AppointmentService {
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
 
-    let patientsCountQuery = currentUser && currentUser.role === 'DOCTOR' 
-      ? prisma.patient.count({ where: { appointments: { some: doctorFilter } } })
-      : prisma.patient.count();
+    // Tính ngày đầu tháng
+    const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
 
-    const [totalPatients, totalDoctors, totalSpecialties, todayAppointments, completedToday, statusStats] = await Promise.all([
+    let patientsCountQuery =
+      currentUser && currentUser.role === 'DOCTOR'
+        ? patientRepo.count({ appointments: { some: doctorFilter } })
+        : patientRepo.count();
+
+    const [
+      totalPatients,
+      totalDoctors,
+      totalSpecialties,
+      todayAppointments,
+      completedToday,
+      statusStats,
+      totalCompleted,
+      totalCancelled,
+      totalAll,
+    ] = await Promise.all([
       patientsCountQuery,
-      prisma.doctor.count({ where: { isActive: true } }),
+      doctorRepo.count({ isActive: true }),
       prisma.specialty.count({ where: { isActive: true } }),
-      prisma.appointment.count({
-        where: { appointmentDate: { gte: today, lt: tomorrow }, ...doctorFilter }
+      appointmentRepo.count({ appointmentDate: { gte: today, lt: tomorrow }, ...doctorFilter }),
+      appointmentRepo.count({
+        appointmentDate: { gte: today, lt: tomorrow },
+        status: 'COMPLETED',
+        ...doctorFilter,
       }),
-      prisma.appointment.count({
-        where: {
-          appointmentDate: { gte: today, lt: tomorrow },
-          status: 'COMPLETED',
-          ...doctorFilter
-        }
-      }),
-      prisma.appointment.groupBy({
-        by: ['status'],
-        where: doctorFilter,
-        _count: { id: true },
-      })
+      appointmentRepo.countByStatusGrouped(doctorFilter),
+      // Revenue & cancellation rate data
+      appointmentRepo.count({ status: 'COMPLETED', ...doctorFilter }),
+      appointmentRepo.count({ status: 'CANCELLED', ...doctorFilter }),
+      appointmentRepo.count(doctorFilter),
     ]);
 
     // Thống kê lịch khám 7 ngày gần nhất
     const sevenDaysAgo = new Date(today);
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6);
 
-    const weeklyAppointments = await prisma.appointment.groupBy({
-      by: ['appointmentDate'],
-      where: {
-        appointmentDate: { gte: sevenDaysAgo, lt: tomorrow },
-        ...doctorFilter
-      },
-      _count: { id: true },
-      orderBy: { appointmentDate: 'asc' }
-    });
+    const weeklyAppointments = await appointmentRepo.countByDateRange(
+      { gte: sevenDaysAgo, lt: tomorrow },
+      doctorFilter
+    );
+
+    // Revenue tháng này (tổng phí khám của các appointment COMPLETED)
+    let monthlyRevenue = 0;
+    try {
+      const revenueResult = await prisma.$queryRaw`
+        SELECT COALESCE(SUM(d."consultationFee"), 0)::float as revenue
+        FROM appointments a
+        JOIN doctors d ON a."doctorId" = d.id
+        WHERE a.status = 'COMPLETED'
+        AND a."appointmentDate" >= ${firstDayOfMonth}
+        AND a."appointmentDate" < ${tomorrow}
+        ${doctorFilter.doctorId ? prisma.$queryRaw`AND a."doctorId" = ${doctorFilter.doctorId}` : prisma.$queryRaw``}
+      `;
+      monthlyRevenue = revenueResult[0]?.revenue || 0;
+    } catch {
+      // Fallback nếu raw query lỗi
+      monthlyRevenue = 0;
+    }
+
+    // Top 5 bác sĩ (theo số ca hoàn thành)
+    let topDoctors = [];
+    try {
+      topDoctors = await prisma.$queryRaw`
+        SELECT d.id, u."fullName", s.name as specialty, 
+               COUNT(a.id)::int as "completedCount", d.rating
+        FROM doctors d
+        JOIN users u ON d."userId" = u.id
+        JOIN specialties s ON d."specialtyId" = s.id
+        LEFT JOIN appointments a ON a."doctorId" = d.id AND a.status = 'COMPLETED'
+        WHERE d."isActive" = true
+        GROUP BY d.id, u."fullName", s.name, d.rating
+        ORDER BY "completedCount" DESC
+        LIMIT 5
+      `;
+    } catch {
+      topDoctors = [];
+    }
+
+    // Top chuyên khoa (theo số ca khám)
+    let topSpecialties = [];
+    try {
+      topSpecialties = await prisma.$queryRaw`
+        SELECT s.id, s.name, COUNT(a.id)::int as "appointmentCount"
+        FROM specialties s
+        JOIN doctors d ON d."specialtyId" = s.id
+        LEFT JOIN appointments a ON a."doctorId" = d.id
+        WHERE s."isActive" = true
+        GROUP BY s.id, s.name
+        ORDER BY "appointmentCount" DESC
+        LIMIT 5
+      `;
+    } catch {
+      topSpecialties = [];
+    }
+
+    // Tỷ lệ hủy lịch
+    const cancellationRate = totalAll > 0 ? Math.round((totalCancelled / totalAll) * 100 * 10) / 10 : 0;
 
     const statusMap = {
       PENDING: 'Chờ xác nhận',
@@ -368,12 +347,12 @@ class AppointmentService {
       REJECTED: 'Từ chối',
       CANCELLED: 'Đã hủy',
       COMPLETED: 'Hoàn thành',
-      NO_SHOW: 'Không đến khám'
+      NO_SHOW: 'Không đến khám',
     };
 
-    const appointmentsByStatus = statusStats.map(item => ({
+    const appointmentsByStatus = statusStats.map((item) => ({
       name: statusMap[item.status] || item.status,
-      value: item._count.id
+      value: item._count.id,
     }));
 
     return {
@@ -382,12 +361,114 @@ class AppointmentService {
       totalSpecialties,
       todayAppointments,
       completedToday,
-      weeklyAppointments: weeklyAppointments.map(item => ({
-        date: new Date(item.appointmentDate).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' }),
+      monthlyRevenue,
+      cancellationRate,
+      topDoctors,
+      topSpecialties,
+      weeklyAppointments: weeklyAppointments.map((item) => ({
+        date: new Date(item.appointmentDate).toLocaleDateString('vi-VN', {
+          day: '2-digit',
+          month: '2-digit',
+        }),
         count: item._count.id,
       })),
       appointmentsByStatus,
     };
+  }
+
+  /**
+   * Gửi notification sau khi đặt lịch thành công (non-blocking qua queue)
+   */
+  async _sendBookingNotifications(appointmentId) {
+    try {
+      const details = await appointmentRepo.findByIdWithDetails(appointmentId);
+      if (!details) return;
+
+      const timeStr = `${details.timeSlot.startTime} - ${details.timeSlot.endTime}`;
+      const dateStr = new Date(details.appointmentDate).toLocaleDateString('vi-VN');
+
+      notificationQueue.enqueue({
+        userId: details.patient.user.id,
+        title: 'Đặt lịch khám thành công',
+        message: `Lịch hẹn khám với bác sĩ ${details.doctor.user.fullName} vào lúc ${timeStr} ngày ${dateStr} đã được gửi đi và đang chờ xác nhận.`,
+        type: 'APPOINTMENT_CREATED',
+        data: { appointmentId },
+      });
+
+      notificationQueue.enqueue({
+        userId: details.doctor.user.id,
+        title: 'Lịch khám mới chờ duyệt',
+        message: `Bệnh nhân ${details.patient.user.fullName} đã đặt lịch khám vào lúc ${timeStr} ngày ${dateStr}.`,
+        type: 'APPOINTMENT_CREATED',
+        data: { appointmentId },
+      });
+    } catch (err) {
+      console.error('Lỗi khi tạo thông báo đặt lịch:', err);
+    }
+  }
+
+  /**
+   * Gửi notification khi cập nhật trạng thái (non-blocking qua queue)
+   */
+  _sendStatusNotifications(appointment, status, cancelReason) {
+    const timeStr = `${appointment.timeSlot.startTime} - ${appointment.timeSlot.endTime}`;
+    const dateStr = new Date(appointment.appointmentDate).toLocaleDateString('vi-VN');
+    const doctorName = appointment.doctor.user.fullName;
+
+    const notifications = [];
+
+    if (status === 'CONFIRMED') {
+      notifications.push({
+        userId: appointment.patient.user.id,
+        title: 'Lịch khám đã được xác nhận',
+        message: `Lịch hẹn khám với bác sĩ ${doctorName} vào lúc ${timeStr} ngày ${dateStr} đã được xác nhận.`,
+        type: 'APPOINTMENT_CONFIRMED',
+        data: { appointmentId: appointment.id },
+      });
+    } else if (status === 'REJECTED') {
+      notifications.push({
+        userId: appointment.patient.user.id,
+        title: 'Lịch khám bị từ chối',
+        message: `Lịch hẹn khám với bác sĩ ${doctorName} vào lúc ${timeStr} ngày ${dateStr} đã bị từ chối.${cancelReason ? ` Lý do: ${cancelReason}` : ''}`,
+        type: 'APPOINTMENT_REJECTED',
+        data: { appointmentId: appointment.id },
+      });
+    } else if (status === 'CANCELLED') {
+      notifications.push({
+        userId: appointment.patient.user.id,
+        title: 'Lịch khám đã bị hủy',
+        message: `Lịch hẹn khám với bác sĩ ${doctorName} vào lúc ${timeStr} ngày ${dateStr} đã bị hủy.${cancelReason ? ` Lý do: ${cancelReason}` : ''}`,
+        type: 'APPOINTMENT_CANCELLED',
+        data: { appointmentId: appointment.id },
+      });
+      notifications.push({
+        userId: appointment.doctor.user.id,
+        title: 'Lịch khám đã bị hủy',
+        message: `Lịch hẹn khám vào lúc ${timeStr} ngày ${dateStr} đã bị hủy.${cancelReason ? ` Lý do: ${cancelReason}` : ''}`,
+        type: 'APPOINTMENT_CANCELLED',
+        data: { appointmentId: appointment.id },
+      });
+    } else if (status === 'COMPLETED') {
+      notifications.push({
+        userId: appointment.patient.user.id,
+        title: 'Khám bệnh hoàn thành',
+        message: `Lịch hẹn khám với bác sĩ ${doctorName} đã hoàn thành. Bạn có thể xem kết quả khám và đơn thuốc của mình.`,
+        type: 'APPOINTMENT_COMPLETED',
+        data: { appointmentId: appointment.id },
+      });
+    } else if (status === 'NO_SHOW') {
+      notifications.push({
+        userId: appointment.patient.user.id,
+        title: 'Vắng mặt không báo trước',
+        message: `Lịch hẹn khám với bác sĩ ${doctorName} vào lúc ${timeStr} ngày ${dateStr} đã bị đánh dấu là vắng mặt.`,
+        type: 'GENERAL',
+        data: { appointmentId: appointment.id },
+      });
+    }
+
+    if (notifications.length > 0) {
+      notificationQueue.enqueueBatch(notifications);
+    }
   }
 }
 

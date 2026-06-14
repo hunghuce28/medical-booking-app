@@ -1,0 +1,59 @@
+# Docker Compose — Medical Appointment Booking
+# Chạy: docker compose up --build
+# Dừng: docker compose down
+
+services:
+  # ========================
+  # Backend API Server
+  # ========================
+  backend:
+    build:
+      context: ./backend
+      target: development
+    container_name: medical-backend
+    ports:
+      - "5000:5000"
+    environment:
+      NODE_ENV: development
+      PORT: 5000
+      DATABASE_URL: postgresql://postgres:postgres@db:5432/medical_booking?schema=public
+      JWT_SECRET: ${JWT_SECRET:-docker-dev-secret-change-in-production-ab84b553c3d526978434758d4a41fae0}
+      JWT_EXPIRE: 7d
+      CORS_ORIGIN: "http://localhost:5173,http://localhost:3000,http://localhost:8081"
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./backend/src:/app/src
+      - ./backend/prisma:/app/prisma
+      - backend_uploads:/app/uploads
+    restart: unless-stopped
+    command: >
+      sh -c "npx prisma migrate deploy && npx prisma db seed && npm run dev"
+
+  # ========================
+  # PostgreSQL Database
+  # ========================
+  db:
+    image: postgres:16-alpine
+    container_name: medical-db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: medical_booking
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+volumes:
+  pgdata:
+    driver: local
+  backend_uploads:
+    driver: local

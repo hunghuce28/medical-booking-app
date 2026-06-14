@@ -1,3 +1,12 @@
+/**
+ * Patient Service — Refactored with Repository Pattern
+ */
+
+const patientRepo = require('../repositories/patient.repository');
+const doctorRepo = require('../repositories/doctor.repository');
+const userRepo = require('../repositories/user.repository');
+const appointmentRepo = require('../repositories/appointment.repository');
+const auditService = require('./audit.service');
 const prisma = require('../utils/prisma');
 
 class PatientService {
@@ -6,7 +15,7 @@ class PatientService {
     let filter = {};
 
     if (currentUser && currentUser.role === 'DOCTOR') {
-      const doctor = await prisma.doctor.findUnique({ where: { userId: currentUser.id } });
+      const doctor = await doctorRepo.findByUserId(currentUser.id);
       if (doctor) {
         filter.appointments = { some: { doctorId: doctor.id } };
       }
@@ -18,37 +27,22 @@ class PatientService {
           { fullName: { contains: search, mode: 'insensitive' } },
           { email: { contains: search, mode: 'insensitive' } },
           { phone: { contains: search } },
-        ]
+        ],
       };
     }
 
-    const skip = (parseInt(page) - 1) * parseInt(limit);
-
-    const [patients, total] = await Promise.all([
-      prisma.patient.findMany({
-        where: filter,
-        include: {
-          user: { select: { fullName: true, email: true, phone: true, avatar: true, isActive: true, createdAt: true } },
-          _count: { select: { appointments: true } }
-        },
-        orderBy: { createdAt: 'desc' },
-        skip,
-        take: parseInt(limit),
-      }),
-      prisma.patient.count({ where: filter })
-    ]);
-
-    return { patients, total };
+    return patientRepo.findAllWithUser(filter, { page, limit });
   }
 
   async getPatientById(id, currentUser = null) {
     const patientId = parseInt(id);
 
     if (currentUser && currentUser.role === 'DOCTOR') {
-      const doctor = await prisma.doctor.findUnique({ where: { userId: currentUser.id } });
+      const doctor = await doctorRepo.findByUserId(currentUser.id);
       if (doctor) {
-        const hasAppointment = await prisma.appointment.count({
-          where: { patientId: patientId, doctorId: doctor.id }
+        const hasAppointment = await appointmentRepo.count({
+          patientId: patientId,
+          doctorId: doctor.id,
         });
         if (hasAppointment === 0) {
           throw new Error('Bạn không có quyền xem thông tin bệnh nhân này');
@@ -56,71 +50,67 @@ class PatientService {
       }
     }
 
-    const patient = await prisma.patient.findUnique({
-      where: { id: patientId },
-      include: {
-        user: { select: { fullName: true, email: true, phone: true, avatar: true, isActive: true } },
-        appointments: {
-          include: {
-            doctor: { include: { user: { select: { fullName: true } }, specialty: { select: { name: true } } } },
-            timeSlot: true,
-          },
-          orderBy: { createdAt: 'desc' },
-          take: 10,
-        }
-      }
-    });
+    const patient = await patientRepo.findByIdWithDetails(patientId);
     if (!patient) throw new Error('Không tìm thấy bệnh nhân');
     return patient;
   }
 
-  async togglePatientStatus(id) {
-    const patient = await prisma.patient.findUnique({
-      where: { id: parseInt(id) },
-      include: { user: true }
-    });
+  async togglePatientStatus(id, req = null) {
+    const patient = await patientRepo.findById(id, { include: { user: true } });
     if (!patient) throw new Error('Không tìm thấy bệnh nhân');
 
-    const updatedUser = await prisma.user.update({
-      where: { id: patient.userId },
-      data: { isActive: !patient.user.isActive }
+    const oldStatus = patient.user.isActive;
+    const updatedUser = await userRepo.update(patient.userId, {
+      isActive: !patient.user.isActive,
+    });
+
+    auditService.log({
+      userId: req?.user?.id,
+      action: 'UPDATE',
+      entityType: 'Patient',
+      entityId: parseInt(id),
+      oldValue: { isActive: oldStatus },
+      newValue: { isActive: updatedUser.isActive },
+      req,
     });
 
     return updatedUser;
   }
 
   async getProfile(userId) {
-    const patient = await prisma.patient.findUnique({
-      where: { userId: parseInt(userId) },
-      include: {
-        user: { select: { fullName: true, email: true, phone: true, avatar: true } }
-      }
-    });
+    const patient = await patientRepo.findByUserIdWithProfile(userId);
     if (!patient) throw new Error('Không tìm thấy hồ sơ bệnh nhân');
     return patient;
   }
 
-  async updateProfile(userId, data) {
-    const { fullName, phone, dateOfBirth, gender, address, insuranceNumber, bloodType, allergies, medicalHistory } = data;
+  async updateProfile(userId, data, req = null) {
+    const {
+      fullName,
+      phone,
+      dateOfBirth,
+      gender,
+      address,
+      insuranceNumber,
+      bloodType,
+      allergies,
+      medicalHistory,
+    } = data;
 
-    // Tìm patient
-    const patient = await prisma.patient.findUnique({ where: { userId: parseInt(userId) } });
+    const patient = await patientRepo.findByUserId(userId);
     if (!patient) throw new Error('Không tìm thấy hồ sơ bệnh nhân');
 
     const result = await prisma.$transaction(async (tx) => {
-      // Cập nhật User
       if (fullName !== undefined || phone !== undefined) {
         await tx.user.update({
           where: { id: parseInt(userId) },
           data: {
             fullName: fullName !== undefined ? fullName : undefined,
             phone: phone !== undefined ? phone : undefined,
-          }
+          },
         });
       }
 
-      // Cập nhật Patient
-      const updatedPatient = await tx.patient.update({
+      return tx.patient.update({
         where: { userId: parseInt(userId) },
         data: {
           dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : undefined,
@@ -130,10 +120,17 @@ class PatientService {
           bloodType: bloodType !== undefined ? bloodType : undefined,
           allergies: allergies !== undefined ? allergies : undefined,
           medicalHistory: medicalHistory !== undefined ? medicalHistory : undefined,
-        }
+        },
       });
+    });
 
-      return updatedPatient;
+    auditService.log({
+      userId: parseInt(userId),
+      action: 'UPDATE',
+      entityType: 'Patient',
+      entityId: patient.id,
+      newValue: data,
+      req,
     });
 
     return result;

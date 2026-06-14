@@ -1,22 +1,70 @@
 const express = require('express');
 const router = express.Router();
 const appointmentController = require('../controllers/appointment.controller');
-const { verifyToken, authorize } = require('../utils/auth');
+const { verifyToken } = require('../utils/auth');
+const { requirePermission } = require('../middleware/permission.middleware');
+const { auditAction } = require('../middleware/audit.middleware');
 const { validate, createAppointmentSchema, updateAppointmentStatusSchema } = require('../validations');
 
-// [GET] /api/appointments/dashboard — Thống kê cho Dashboard (ĐẶT TRƯỚC /:id)
-router.get('/dashboard', verifyToken, authorize('ADMIN', 'DOCTOR'), appointmentController.getDashboardStats);
+/**
+ * @openapi
+ * /api/appointments/dashboard:
+ *   get:
+ *     summary: Thống kê Dashboard (Admin/Bác sĩ)
+ *     tags: [Appointments]
+ *     security: [{ bearerAuth: [] }]
+ */
+router.get('/dashboard', verifyToken, requirePermission('appointment.dashboard'), appointmentController.getDashboardStats);
 
-// [GET] /api/appointments/my — Bệnh nhân xem lịch khám của mình
+/**
+ * @openapi
+ * /api/appointments/my:
+ *   get:
+ *     summary: Bệnh nhân xem lịch khám của mình
+ *     tags: [Appointments]
+ *     security: [{ bearerAuth: [] }]
+ */
 router.get('/my', verifyToken, appointmentController.getMyAppointments);
 
-// [GET] /api/appointments — Admin/Bác sĩ xem danh sách lịch khám
-router.get('/', verifyToken, authorize('ADMIN', 'DOCTOR'), appointmentController.getAll);
+/**
+ * @openapi
+ * /api/appointments:
+ *   get:
+ *     summary: Danh sách lịch khám (Admin/Bác sĩ)
+ *     tags: [Appointments]
+ *     security: [{ bearerAuth: [] }]
+ */
+router.get('/', verifyToken, requirePermission('appointment.view_all'), appointmentController.getAll);
 
-// [POST] /api/appointments — Bệnh nhân đặt lịch (hoặc Admin đặt hộ)
-router.post('/', verifyToken, validate(createAppointmentSchema), appointmentController.create);
+/**
+ * @openapi
+ * /api/appointments:
+ *   post:
+ *     summary: Bệnh nhân đặt lịch khám
+ *     tags: [Appointments]
+ *     security: [{ bearerAuth: [] }]
+ */
+router.post('/',
+  verifyToken,
+  requirePermission('appointment.create'),
+  validate(createAppointmentSchema),
+  auditAction('Appointment', 'CREATE'),
+  appointmentController.create
+);
 
-// [PATCH] /api/appointments/:id/status — Admin/Bác sĩ duyệt/từ chối/hoàn thành, Bệnh nhân hủy
-router.patch('/:id/status', verifyToken, authorize('ADMIN', 'DOCTOR', 'PATIENT'), validate(updateAppointmentStatusSchema), appointmentController.updateStatus);
+/**
+ * @openapi
+ * /api/appointments/{id}/status:
+ *   patch:
+ *     summary: Cập nhật trạng thái lịch khám
+ *     tags: [Appointments]
+ *     security: [{ bearerAuth: [] }]
+ */
+router.patch('/:id/status',
+  verifyToken,
+  requirePermission('appointment.manage_status'),
+  validate(updateAppointmentStatusSchema),
+  appointmentController.updateStatus
+);
 
 module.exports = router;

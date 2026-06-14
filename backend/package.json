@@ -6,7 +6,10 @@
   "scripts": {
     "dev": "nodemon src/index.js",
     "start": "node src/index.js",
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "jest --runInBand --detectOpenHandles --forceExit",
+    "test:watch": "jest --watch",
+    "test:unit": "jest unit --runInBand --detectOpenHandles --forceExit",
+    "test:integration": "jest integration --runInBand --detectOpenHandles --forceExit",
     "prisma:migrate": "prisma migrate dev",
     "prisma:generate": "prisma generate",
     "prisma:seed": "node prisma/seed.js"
@@ -41,7 +44,9 @@
     "swagger-ui-express": "^5.0.0"
   },
   "devDependencies": {
-    "nodemon": "^3.1.14"
+    "jest": "^30.4.2",
+    "nodemon": "^3.1.14",
+    "supertest": "^7.2.2"
   },
   "prisma": {
     "seed": "node prisma/seed.js"

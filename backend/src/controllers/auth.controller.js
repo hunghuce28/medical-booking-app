@@ -3,7 +3,7 @@ const { asyncHandler, ApiError } = require('../utils/errorHandler');
 
 class AuthController {
   register = asyncHandler(async (req, res) => {
-    const result = await authService.register(req.body);
+    const result = await authService.register(req.body, req);
     res.status(201).json({
       success: true,
       message: 'Đăng ký tài khoản thành công',
@@ -12,7 +12,7 @@ class AuthController {
   });
 
   login = asyncHandler(async (req, res) => {
-    const result = await authService.login(req.body);
+    const result = await authService.login(req.body, req);
     res.status(200).json({
       success: true,
       message: 'Đăng nhập thành công',
@@ -22,7 +22,7 @@ class AuthController {
 
   changePassword = asyncHandler(async (req, res) => {
     const userId = req.user.id;
-    const result = await authService.changePassword(userId, req.body);
+    const result = await authService.changePassword(userId, req.body, req);
     res.status(200).json({ success: true, message: result.message });
   });
 
@@ -39,6 +39,22 @@ class AuthController {
       message: 'Lấy token mới thành công',
       data: result
     });
+  });
+
+  logout = asyncHandler(async (req, res) => {
+    const { refreshToken } = req.body;
+    const result = await authService.logout(refreshToken, req);
+    res.status(200).json({ success: true, message: result.message });
+  });
+
+  forceLogout = asyncHandler(async (req, res) => {
+    const result = await authService.forceLogout(req.user.id, req);
+    res.status(200).json({ success: true, message: result.message });
+  });
+
+  getActiveSessions = asyncHandler(async (req, res) => {
+    const sessions = await authService.getActiveSessions(req.user.id);
+    res.status(200).json({ success: true, data: sessions });
   });
 }
 

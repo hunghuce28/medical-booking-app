@@ -1,41 +1,43 @@
-const prisma = require('../utils/prisma');
+/**
+ * Specialty Service — Refactored with Repository Pattern
+ */
+
+const specialtyRepo = require('../repositories/specialty.repository');
+const auditService = require('./audit.service');
 
 class SpecialtyService {
   async getAllSpecialties(query = {}) {
     const { includeInactive } = query;
     const filter = includeInactive === 'true' ? {} : { isActive: true };
-
-    return await prisma.specialty.findMany({
-      where: filter,
-      include: {
-        _count: {
-          select: { doctors: true }
-        }
-      },
-      orderBy: { createdAt: 'desc' }
-    });
+    return specialtyRepo.findAllWithDoctorCount(filter);
   }
 
   async getSpecialtyById(id) {
-    const specialty = await prisma.specialty.findUnique({
-      where: { id: parseInt(id) }
-    });
+    const specialty = await specialtyRepo.findById(id);
     if (!specialty) throw new Error('Không tìm thấy chuyên khoa');
     return specialty;
   }
 
-  async createSpecialty(data) {
+  async createSpecialty(data, req = null) {
     const { name, description, icon } = data;
-    const existing = await prisma.specialty.findUnique({ where: { name } });
+    const existing = await specialtyRepo.findByName(name);
     if (existing) throw new Error('Chuyên khoa đã tồn tại');
 
-    return await prisma.specialty.create({
-      data: { name, description, icon }
+    const specialty = await specialtyRepo.create({ name, description, icon });
+
+    auditService.log({
+      userId: req?.user?.id,
+      action: 'CREATE',
+      entityType: 'Specialty',
+      entityId: specialty.id,
+      newValue: { name, description, icon },
+      req,
     });
+
+    return specialty;
   }
 
-  async updateSpecialty(id, data) {
-    // Whitelist các trường được phép cập nhật
+  async updateSpecialty(id, data, req = null) {
     const { name, description, icon, isActive } = data;
     const updateData = {};
     if (name !== undefined) updateData.name = name;
@@ -43,17 +45,37 @@ class SpecialtyService {
     if (icon !== undefined) updateData.icon = icon;
     if (isActive !== undefined) updateData.isActive = isActive;
 
-    return await prisma.specialty.update({
-      where: { id: parseInt(id) },
-      data: updateData
+    const old = await specialtyRepo.findById(id);
+
+    const specialty = await specialtyRepo.update(id, updateData);
+
+    auditService.log({
+      userId: req?.user?.id,
+      action: 'UPDATE',
+      entityType: 'Specialty',
+      entityId: parseInt(id),
+      oldValue: old,
+      newValue: updateData,
+      req,
     });
+
+    return specialty;
   }
 
-  async deleteSpecialty(id) {
-    return await prisma.specialty.update({
-      where: { id: parseInt(id) },
-      data: { isActive: false }
+  async deleteSpecialty(id, req = null) {
+    const specialty = await specialtyRepo.update(id, { isActive: false });
+
+    auditService.log({
+      userId: req?.user?.id,
+      action: 'DELETE',
+      entityType: 'Specialty',
+      entityId: parseInt(id),
+      oldValue: { isActive: true },
+      newValue: { isActive: false },
+      req,
     });
+
+    return specialty;
   }
 }
 

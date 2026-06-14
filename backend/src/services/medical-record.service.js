@@ -1,13 +1,20 @@
+/**
+ * Medical Record Service — Refactored with Repository Pattern
+ * Supports nested prescriptions and attachments
+ */
+
+const medicalRecordRepo = require('../repositories/medical-record.repository');
+const appointmentRepo = require('../repositories/appointment.repository');
+const auditService = require('./audit.service');
 const prisma = require('../utils/prisma');
 
 class MedicalRecordService {
-  async create(data, currentUser = null) {
-    const { appointmentId, diagnosis, prescription, notes, followUpDate } = data;
+  async create(data, currentUser = null, req = null) {
+    const { appointmentId, diagnosis, prescription, notes, followUpDate, prescriptions, attachments } = data;
 
     // Kiểm tra appointment tồn tại
-    const appointment = await prisma.appointment.findUnique({
-      where: { id: parseInt(appointmentId) },
-      include: { doctor: true }
+    const appointment = await appointmentRepo.findById(appointmentId, {
+      include: { doctor: true },
     });
     if (!appointment) throw new Error('Không tìm thấy lịch khám');
 
@@ -24,32 +31,66 @@ class MedicalRecordService {
     }
 
     // Kiểm tra đã có kết quả chưa
-    const existing = await prisma.medicalRecord.findUnique({ where: { appointmentId: parseInt(appointmentId) } });
+    const existing = await medicalRecordRepo.findByAppointmentId(appointmentId);
     if (existing) throw new Error('Lịch khám này đã có kết quả rồi');
 
-    return await prisma.medicalRecord.create({
-      data: {
-        appointmentId: parseInt(appointmentId),
-        diagnosis,
-        prescription,
-        notes,
-        followUpDate: followUpDate ? new Date(followUpDate) : null,
-      }
+    // Tạo trong transaction (medical record + prescriptions + attachments)
+    const record = await prisma.$transaction(async (tx) => {
+      const newRecord = await tx.medicalRecord.create({
+        data: {
+          appointmentId: parseInt(appointmentId),
+          diagnosis,
+          prescription, // Giữ trường cũ cho backward compatibility
+          notes,
+          followUpDate: followUpDate ? new Date(followUpDate) : null,
+          // Tạo prescriptions chi tiết nếu có
+          ...(prescriptions && prescriptions.length > 0 && {
+            prescriptions: {
+              create: prescriptions.map((p) => ({
+                medicineName: p.medicineName,
+                dosage: p.dosage,
+                frequency: p.frequency,
+                duration: p.duration || null,
+                notes: p.notes || null,
+              })),
+            },
+          }),
+          // Tạo attachments nếu có
+          ...(attachments && attachments.length > 0 && {
+            attachments: {
+              create: attachments.map((a) => ({
+                fileName: a.fileName,
+                fileUrl: a.fileUrl,
+                fileType: a.fileType || 'image',
+                description: a.description || null,
+              })),
+            },
+          }),
+        },
+        include: {
+          prescriptions: true,
+          attachments: true,
+        },
+      });
+
+      return newRecord;
     });
+
+    // Audit log
+    auditService.log({
+      userId: currentUser?.id,
+      action: 'CREATE',
+      entityType: 'MedicalRecord',
+      entityId: record.id,
+      newValue: { appointmentId, diagnosis, prescriptionCount: prescriptions?.length || 0 },
+      req,
+    });
+
+    return record;
   }
 
   async getByAppointmentId(appointmentId, currentUser = null) {
-    const record = await prisma.medicalRecord.findUnique({
-      where: { appointmentId: parseInt(appointmentId) },
-      include: {
-        appointment: {
-          include: {
-            patient: { include: { user: { select: { id: true, fullName: true } } } },
-            doctor: { include: { user: { select: { id: true, fullName: true } }, specialty: { select: { name: true } } } },
-          }
-        }
-      }
-    });
+    const record = await medicalRecordRepo.findByAppointmentId(appointmentId);
     if (!record) throw new Error('Chưa có kết quả khám cho lịch hẹn này');
 
     // Kiểm tra quyền đọc: chỉ bệnh nhân/bác sĩ liên quan hoặc admin
