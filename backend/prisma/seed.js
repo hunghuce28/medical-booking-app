@@ -154,6 +154,58 @@ async function main() {
   console.log(`\n   Tổng: ${doctorsData.length} bác sĩ + lịch làm việc T2-T6\n`);
 
   // ========================
+  // 5. Tạo Ngày lễ & Đơn nghỉ phép của bác sĩ mẫu
+  // ========================
+  console.log('📅 Tạo ngày nghỉ lễ và đơn xin nghỉ phép mẫu...');
+  
+  // 5.1 Tạo Ngày lễ (Holiday)
+  const holidays = [
+    { date: new Date('2026-01-01'), name: 'Tết Dương Lịch 2026' },
+    { date: new Date('2026-09-02'), name: 'Quốc Khánh' },
+    { date: new Date('2026-04-30'), name: 'Giải Phóng Miền Nam' },
+    { date: new Date('2026-05-01'), name: 'Quốc Tế Lao Động' },
+  ];
+
+  for (const h of holidays) {
+    await prisma.holiday.upsert({
+      where: { date: h.date },
+      update: {},
+      create: h,
+    });
+  }
+  console.log(`   ✅ Đã tạo ${holidays.length} ngày lễ mẫu`);
+
+  // 5.2 Tạo Đơn xin nghỉ phép mẫu cho Bác sĩ Nguyễn Văn An
+  const drAnUser = await prisma.user.findUnique({ where: { email: 'bacsi_an@hospital.vn' } });
+  if (drAnUser) {
+    const drAn = await prisma.doctor.findUnique({ where: { userId: drAnUser.id } });
+    if (drAn) {
+      const leaveStartDate = new Date('2026-07-15');
+      const leaveEndDate = new Date('2026-07-16');
+      
+      const existingLeave = await prisma.leaveRequest.findFirst({
+        where: {
+          doctorId: drAn.id,
+          startDate: leaveStartDate,
+        }
+      });
+
+      if (!existingLeave) {
+        await prisma.leaveRequest.create({
+          data: {
+            doctorId: drAn.id,
+            startDate: leaveStartDate,
+            endDate: leaveEndDate,
+            status: 'APPROVED',
+            reason: 'Nghỉ phép thường niên',
+          }
+        });
+      }
+      console.log(`   ✅ Đã tạo đơn nghỉ phép APPROVED cho BS Nguyễn Văn An từ 15/07/2026 đến 16/07/2026`);
+    }
+  }
+
+  // ========================
   // Tổng kết
   // ========================
   console.log('═══════════════════════════════════════');

@@ -1,59 +1,234 @@
-## **Ứng dụng đặt lịch khám bệnh Medical Booking**
+# 🩺 Medical Appointment Booking System (Hệ thống đặt lịch khám bệnh trực tuyến)
 
-- Mô tả: Ứng dụng đặt lịch khám bệnh trực tuyến đa nền tảng y tế số, giúp tối ưu hóa quy trình kết nối giữa bệnh nhân, bác sĩ và nhà quản trị phòng khám/bệnh viện. Sử dụng các công nghệ hiện đại: Node.js (Express), React (Vite), React Native (Expo), Prisma ORM và cơ sở dữ liệu PostgreSQL.
+Hệ thống đặt lịch khám bệnh trực tuyến đa nền tảng y tế số giúp tối ưu hóa quy trình kết nối giữa bệnh nhân, bác sĩ và nhà quản trị phòng khám/bệnh viện. Dự án được phát triển theo cấu trúc phân lớp chuyên nghiệp, đáp ứng các tiêu chuẩn bảo mật, chịu tải và tuân thủ dữ liệu y tế.
 
-## **Các yêu cầu nghiệp vụ:**
-* Đối với bệnh nhân (Người dùng Mobile App):
-1. Người dùng được đăng ký tài khoản cá nhân, cập nhật hồ sơ y tế đầy đủ (họ tên, ngày sinh, giới tính, số điện thoại, địa chỉ, mã BHYT, nhóm máu, tiền sử dị ứng, tiền sử bệnh án).
-2. Hệ thống hỗ trợ tìm kiếm và lọc danh sách bác sĩ trực tuyến theo chuyên khoa y tế, học hàm học vị hoặc mức độ đánh giá (Rating) từ bệnh nhân trước đó.
-3. Người dùng dễ dàng tra cứu lịch khám trống của bác sĩ (Available Time Slots), thực hiện đặt lịch khám nhanh chóng bằng cách chọn ngày giờ rảnh và nhập mô tả triệu chứng ban đầu.
-4. Quản lý danh sách các lịch hẹn khám cá nhân theo thời gian và trạng thái (Đang chờ duyệt, Đã xác nhận, Đã hủy, Đã hoàn tất).
-5. Nhận kết quả khám bệnh, đơn thuốc y khoa và ghi chú tái khám trực quan ngay sau khi cuộc hẹn khám hoàn thành.
-6. Cho phép đánh giá, phản hồi mức độ hài lòng (xếp hạng từ 1-5 sao và bình luận chi tiết) dành cho bác sĩ sau khi cuộc khám bệnh kết thúc.
-7. Nhận thông báo nhắc nhở lịch hẹn, cập nhật trạng thái cuộc hẹn trong thời gian thực nhờ công nghệ Socket.io.
+---
 
+## 🏗️ Kiến trúc hệ thống (System Architecture)
 
-* Đối với bác sĩ (Giao diện Web Portal):
-1. Đăng nhập hệ thống, cập nhật hồ sơ chuyên môn cá nhân (bằng cấp học vị, mô tả kinh nghiệm, mức phí khám bệnh trực tiếp).
-2. Thiết lập lịch trực cố định hàng tuần (Doctor Schedule) theo ngày trong tuần và khoảng thời gian để hệ thống tự động sinh ra các Time Slots khám rảnh cho bệnh nhân đăng ký.
-3. Xem danh sách lịch hẹn khám của bệnh nhân, chủ động xác nhận (Confirm) hoặc từ chối/hủy lịch hẹn kèm theo lý do từ chối rõ ràng.
-4. Thực hiện khám bệnh trực quan, lập Hồ sơ bệnh án điện tử (Medical Record) cho bệnh nhân bao gồm chẩn đoán, kê đơn thuốc và ngày hẹn tái khám.
-5. Xem lại lịch sử các đánh giá, phản hồi chi tiết từ bệnh nhân để nâng cao trải nghiệm y khoa.
-6. Theo dõi bảng điều khiển số liệu thống kê Dashboard cá nhân về tổng số ca khám và doanh thu thực tế.
+Dự án áp dụng mô hình **Clean Layered Architecture** kết hợp với **Repository Pattern** để tách biệt hoàn toàn Business Logic khỏi Data Access Layer:
 
+```mermaid
+graph TD
+    Client[Mobile App / Web Admin / API Client] -->|HTTP / WebSockets| Express[Express.js Layer]
+    Express -->|Middleware| Security[Helmet, Rate Limit, CORS, Compression]
+    Security -->|Auth Middleware| Controller[Controllers]
+    Controller -->|Request Validation| Joi[Joi Validation]
+    Controller -->|Service Call| Service[Service Layer]
+    Service -->|Event Emit| EventEmitter[EventEmitter Notification Queue]
+    EventEmitter -->|Job Execution| EmailJob[Nodemailer Email Dispatch]
+    EventEmitter -->|Job Execution| SocketJob[Realtime WebSockets Push]
+    Service -->|Read/Write Operations| Repository[Repository Layer]
+    Repository -->|Query / Row Lock| Prisma[Prisma ORM]
+    Prisma -->|Transaction / SQL| PostgreSQL[(PostgreSQL Database)]
+    Service -->|Read Cache| RedisCache[Redis Caching Middleware]
+    RedisCache -->|Bypass / Fallback| Database
+```
 
-* Đối với quản trị viên (System Admin Web Portal):
-1. Quản lý danh mục tài khoản toàn bộ người dùng trong hệ thống (Bệnh nhân, Bác sĩ, Quản trị viên), có quyền kích hoạt hoặc khóa tài khoản khi phát hiện dấu hiệu vi phạm.
-2. Quản lý danh mục Chuyên khoa y tế (tạo mới chuyên khoa, chỉnh sửa thông tin mô tả, cập nhật hình ảnh biểu tượng chuyên khoa).
-3. Duyệt danh sách bác sĩ, gán bác sĩ trực thuộc các chuyên khoa phù hợp để hỗ trợ bệnh nhân tìm kiếm.
-4. Giám sát toàn bộ luồng lịch hẹn khám bệnh, hồ sơ bệnh án, các thông báo hệ thống và lịch sử đánh giá bác sĩ toàn viện.
-5. Theo dõi biểu đồ Dashboard thống kê tổng quan sức khỏe hệ thống y tế thời gian thực.
+### 🗄️ Sơ đồ thực thể liên kết (Entity-Relationship Diagram - ERD)
 
-## **Sơ đồ ERD (Entity-Relationship Diagram)**
+Dưới đây là thiết kế cơ sở dữ liệu hoàn chỉnh, bao gồm các bảng bảo mật và động cơ quản lý lịch trực nâng cao:
 
 ```mermaid
 erDiagram
     users ||--o| patients : "userId (1:1)"
     users ||--o| doctors : "userId (1:1)"
     users ||--o{ notifications : "userId (1:N)"
+    users ||--o{ refresh_tokens : "userId (1:N)"
+    users ||--o{ audit_logs : "userId (1:N)"
+    users ||--o{ appointment_histories : "changedByUserId (1:N)"
     specialties ||--o{ doctors : "specialtyId (1:N)"
     doctors ||--o{ doctor_schedules : "doctorId (1:N)"
     doctors ||--o{ time_slots : "doctorId (1:N)"
+    doctors ||--o{ leave_requests : "doctorId (1:N)"
     patients ||--o{ appointments : "patientId (1:N)"
     doctors ||--o{ appointments : "doctorId (1:N)"
     time_slots ||--o| appointments : "timeSlotId (1:1)"
     appointments ||--o| medical_records : "appointmentId (1:1)"
     appointments ||--o| reviews : "appointmentId (1:1)"
+    appointments ||--o{ appointment_histories : "appointmentId (1:N)"
     patients ||--o{ reviews : "patientId (1:N)"
     doctors ||--o{ reviews : "doctorId (1:N)"
+    holidays {
+        int id
+        date date
+        string name
+    }
 ```
 
-1. **Quan hệ 1:1 giữa User và Patient/Doctor:** Mỗi tài khoản trong hệ thống (`users`) chỉ liên kết với tối đa một bản ghi chi tiết bệnh nhân (`patients`) hoặc bác sĩ (`doctors`) thông qua `userId`, giúp bảo mật thông tin đăng nhập và tách biệt logic nghiệp vụ.
-2. **Quan hệ 1:N giữa Specialty và Doctor:** Một chuyên khoa y tế (`specialties`) chứa nhiều bác sĩ làm việc trực thuộc, nhưng mỗi bác sĩ chỉ thuộc về duy nhất một chuyên khoa y khoa thông qua `specialtyId`.
-3. **Quan hệ 1:N giữa Doctor và DoctorSchedule:** Một bác sĩ có thể thiết lập cấu hình nhiều ca trực cố định (`doctor_schedules`) cho các ngày trong tuần (Thứ Hai đến Chủ Nhật).
-4. **Quan hệ 1:N giữa Doctor và TimeSlot:** Bác sĩ quản lý nhiều khung giờ khám cụ thể theo ngày thực tế (`time_slots`) để bệnh nhân có thể đăng ký đặt chỗ trực tuyến.
-5. **Quan hệ 1:N giữa Patient/Doctor và Appointment:** Bệnh nhân và bác sĩ tương tác thông qua nhiều cuộc hẹn y tế (`appointments`). Một bệnh nhân được đặt nhiều cuộc hẹn và một bác sĩ tiếp nhận nhiều ca khám khác nhau.
-6. **Quan hệ 1:1 giữa Appointment và TimeSlot:** Mỗi cuộc hẹn khám bệnh liên kết duy nhất với một khung giờ khám. Khung giờ khi đã có lịch hẹn được xác nhận sẽ tự động chuyển trạng thái `BOOKED` để chống trùng lịch khám.
-7. **Quan hệ 1:1 giữa Appointment và MedicalRecord:** Sau khi bác sĩ hoàn thành quy trình khám chữa bệnh (`COMPLETED`), một kết quả khám bệnh (`medical_records`) ghi nhận chẩn đoán và đơn thuốc y khoa sẽ được tạo lập duy nhất cho cuộc hẹn đó.
-8. **Quan hệ 1:1 giữa Appointment và Review:** Mỗi cuộc khám bệnh hoàn thành chỉ được phép gửi tối đa một đánh giá phản hồi (`reviews`) từ bệnh nhân đặt lịch để đảm bảo tính xác thực.
-9. **Quan hệ 1:N giữa User và Notification:** Mỗi người dùng trong hệ thống có thể nhận được nhiều thông báo nhắc nhở (`notifications`) phục vụ cập nhật tiến trình y tế thời gian thực.
+---
+
+## ⚡ Các cải tiến kỹ thuật nổi bật (Advanced Backend Features)
+
+> [!IMPORTANT]
+> Dự án này vượt qua cấu trúc của một ứng dụng CRUD thông thường thông qua các nâng cấp doanh nghiệp sau:
+
+1. **Repository Pattern (Tách lớp truy cập dữ liệu)**
+   - Hệ thống triển khai 12 domain repositories kế thừa từ `BaseRepository` để trừu tượng hóa các tác vụ database của Prisma, giúp dễ dàng viết Unit Test độc lập và giảm khớp nối (coupling).
+2. **Double Booking Prevention (Pessimistic Concurrency Locking)**
+   - Ngăn chặn triệt để tình trạng hai bệnh nhân đặt cùng một khung giờ của bác sĩ tại cùng một thời điểm bằng cách áp dụng khóa dòng `SELECT ... FOR UPDATE` (Pessimistic Write Lock) trong database transaction.
+3. **Redis Caching Middleware (Tối ưu hóa hiệu năng)**
+   - Tự động lưu cache các API tần suất đọc cao như chuyên khoa và danh sách bác sĩ. Cơ chế **Graceful Fallback** tự động bỏ qua cache khi kết nối Redis gặp sự cố, đảm bảo hệ thống không bị gián đoạn.
+4. **Decoupled Event-based Notification Queue**
+   - Áp dụng mẫu thiết kế hướng sự kiện (EventEmitter) để chuyển luồng gửi thông báo và gửi email thành các tác vụ chạy ngầm phi tuần tự (Non-blocking).
+5. **SMTP Email System (Nodemailer & Ethereal Fallback)**
+   - Tích hợp gửi email thông báo thực tế khi đặt/hủy/xác nhận lịch khám. Hỗ trợ tự động tạo tài khoản kiểm thử **Ethereal Email** khi không cung cấp cấu hình SMTP thực tế, giúp lập trình viên kiểm thử dễ dàng qua link log ở console.
+6. **Refresh Token Rotation & Session Revocation**
+   - Bảo mật phiên đăng nhập nâng cao với JWT ngắn hạn (15 phút) đi kèm cơ chế quay vòng Refresh Token (Token Rotation) được lưu trữ trong cơ sở dữ liệu. Cho phép người dùng theo dõi và đăng xuất các phiên đăng nhập lạ (Force Logout).
+7. **Audit Log System (An toàn & Tuân thủ y tế)**
+   - Ghi lại vết lịch sử hoạt động đối với toàn bộ các thao tác thay đổi dữ liệu nhạy cảm (Ai làm? Vào lúc nào? Thiết bị gì? Giá trị cũ và mới là gì?).
+8. **Health check & Readiness Check**
+   - Cung cấp các endpoint `/health` và `/ready` để giám sát trạng thái kết nối trực tiếp đến PostgreSQL và Redis trong môi trường Kubernetes hoặc Docker Swarm.
+
+---
+
+## 📁 Cấu trúc thư mục dự án (Directory Structure)
+
+```text
+medical_appointment_booking/
+ ├── .github/workflows/       # CI/CD GitHub Actions
+ ├── backend/                 # API Server Code
+ │    ├── prisma/             # Schema & database migrations
+ │    ├── src/
+ │    │    ├── config/        # Cấu hình Swagger & Permissions (RBAC)
+ │    │    ├── controllers/   # Điều khiển luồng HTTP requests
+ │    │    ├── middleware/    # Rate Limiter, Cache, Audit, Permissions middlewares
+ │    │    ├── queues/        # EventEmitter Notification Queue
+ │    │    ├── repositories/  # Database Repository Layer
+ │    │    ├── routes/        # Router định tuyến API endpoints
+ │    │    ├── services/      # Lớp chứa core business logic
+ │    │    ├── utils/         # Kết nối Redis, Socket.io, Error Handler, Env Validator
+ │    │    └── index.js       # App entry point
+ │    ├── __tests__/          # Jest Test suite (Unit & Integration tests)
+ │    ├── Dockerfile          # Multi-stage Dockerfile cho backend
+ │    └── package.json
+ ├── web-admin/               # Web Portal quản trị (Vite + React)
+ │    ├── src/
+ │    └── Dockerfile          # Dockerfile phục vụ web-admin qua Nginx
+ ├── mobile/                  # Mobile App bệnh nhân (React Native + Expo)
+ └── docker-compose.yml       # Docker Compose chạy toàn bộ hệ thống
+```
+
+---
+
+## ⚙️ Hướng dẫn cài đặt & Chạy ứng dụng (Quick Start)
+
+### 1. Cấu hình môi trường (.env)
+
+Tạo file `backend/.env` dựa trên file `.env.example`:
+
+```env
+PORT=5000
+NODE_ENV=development
+
+# Chuỗi kết nối PostgreSQL
+DATABASE_URL="postgresql://postgres:1234@localhost:5432/medical_booking?schema=public"
+
+# Bảo mật JWT
+JWT_SECRET="ab84b553c3d526978434758d4a41fae0a297e682d33452bd20af8121d9600e12"
+JWT_EXPIRE=7d
+
+# Cấu hình Redis (Tùy chọn, tự động bypass nếu bỏ trống)
+REDIS_URL="redis://localhost:6379"
+
+# Cấu hình SMTP Email (Tùy chọn, tự động sinh tài khoản Ethereal thử nghiệm nếu bỏ trống)
+EMAIL_HOST="smtp.gmail.com"
+EMAIL_PORT=587
+EMAIL_USER="your-email@gmail.com"
+EMAIL_PASS="your-app-password"
+EMAIL_FROM='"Medical Booking" <noreply@yourdomain.com>'
+```
+
+### 2. Chạy ứng dụng cục bộ (Local Run)
+
+Yêu cầu đã cài đặt **Node.js (>=16)** và **PostgreSQL**:
+
+```bash
+# 1. Di chuyển vào thư mục backend
+cd backend
+
+# 2. Cài đặt các thư viện
+npm install
+
+# 3. Đồng bộ cấu trúc Database và khởi động Migration
+npx prisma db push --accept-data-loss
+
+# 4. Nạp dữ liệu mẫu (Seeding)
+npm run prisma:seed
+
+# 5. Chạy server ở chế độ Development
+npm run dev
+```
+> Server sẽ khởi chạy tại: `http://localhost:5000`  
+> Tài liệu Swagger API tại: `http://localhost:5000/api-docs`
+
+---
+
+## 🐳 Triển khai bằng Docker Compose (Production-ready)
+
+Hệ thống được đóng gói hoàn chỉnh bằng Docker Compose để chạy toàn bộ dịch vụ (Backend, DB, Redis, Web-Admin) chỉ với 1 câu lệnh duy nhất:
+
+```bash
+# Khởi chạy hệ thống ở chế độ background
+docker compose up -d --build
+```
+
+Dịch vụ sẽ tự động ánh xạ các cổng:
+- **Backend API:** `http://localhost:5000`
+- **Swagger Docs:** `http://localhost:5000/api-docs`
+- **Web Admin Portal:** `http://localhost:3000`
+- **PostgreSQL Database:** `localhost:5432`
+- **Redis Cache Server:** `localhost:6379`
+
+Dừng hệ thống:
+```bash
+docker compose down
+```
+
+---
+
+## 🧪 Quy trình kiểm thử hệ thống (Testing Suite)
+
+Dự án đi kèm **96 test cases** được viết bằng Jest để đảm bảo tính ổn định và độ tin cậy của mã nguồn.
+
+### Chạy toàn bộ Tests
+```bash
+cd backend
+npm run test
+```
+
+### Chạy Unit Tests độc lập
+```bash
+npm run test:unit
+```
+
+### Chạy Integration Tests (API Endpoint Tests)
+```bash
+npm run test:integration
+```
+
+---
+
+## 🔒 Danh sách lỗi HTTP & Mã lỗi trả về (API Error Codes)
+
+Hệ thống quản lý lỗi tập trung tại `errorHandler.js` và trả về các mã lỗi chuẩn hóa dưới dạng JSON:
+
+| Trạng thái HTTP | Mã lỗi | Ý nghĩa |
+| :--- | :--- | :--- |
+| `400 Bad Request` | `Validation error` | Định dạng dữ liệu đầu vào không hợp lệ (Joi validation) |
+| `401 Unauthorized` | `INVALID_TOKEN` | Access token không hợp lệ hoặc bị giả mạo |
+| `401 Unauthorized` | `TOKEN_EXPIRED` | Access token đã hết hạn |
+| `400 Bad Request` | `UNIQUE_CONSTRAINT` | Trùng lặp dữ liệu duy nhất (như email hoặc phone đã được đăng ký) |
+| `404 Not Found` | `NOT_FOUND` | Bản ghi không tồn tại trong cơ sở dữ liệu |
+| `403 Forbidden` | `Access denied` | Người dùng không có quyền truy cập endpoint này (RBAC) |
+| `500 Server Error` | `Internal Server Error` | Lỗi phát sinh từ phía server |
+
+---
+
+## 📈 Quy trình tích hợp liên tục (CI/CD Workflows)
+
+Dự án cấu hình GitHub Actions (`.github/workflows/ci.yml`) để tự động hóa kiểm thử phần mềm trên mỗi sự kiện `push` hoặc `pull_request` lên nhánh `main`:
+1. Khởi tạo dịch vụ PostgreSQL kiểm thử tạm thời.
+2. Kiểm tra lỗi cú pháp (Linting).
+3. Biên dịch ứng dụng (Build validation).
+4. Chạy toàn bộ 96+ ca kiểm thử tự động (Unit & Integration tests).

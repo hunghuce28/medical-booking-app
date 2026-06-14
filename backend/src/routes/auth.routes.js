@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const authController = require('../controllers/auth.controller');
 const { verifyToken } = require('../utils/auth');
-const { validate, registerSchema, loginSchema, changePasswordSchema, refreshTokenSchema } = require('../validations');
+const { validate, registerSchema, loginSchema, changePasswordSchema, refreshTokenSchema, forgotPasswordSchema, resetPasswordSchema } = require('../validations');
 
 /**
  * @openapi
@@ -109,5 +109,48 @@ router.post('/force-logout', verifyToken, authController.forceLogout);
  *     security: [{ bearerAuth: [] }]
  */
 router.get('/sessions', verifyToken, authController.getActiveSessions);
+
+/**
+ * @openapi
+ * /api/auth/forgot-password:
+ *   post:
+ *     summary: Yêu cầu khôi phục mật khẩu qua email
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [email]
+ *             properties:
+ *               email: { type: string, format: email }
+ *     responses:
+ *       200: { description: Link khôi phục mật khẩu đã được gửi }
+ *       404: { description: Email không tồn tại }
+ */
+router.post('/forgot-password', validate(forgotPasswordSchema), authController.forgotPassword);
+
+/**
+ * @openapi
+ * /api/auth/reset-password:
+ *   post:
+ *     summary: Khôi phục mật khẩu bằng token khôi phục
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [token, newPassword]
+ *             properties:
+ *               token: { type: string }
+ *               newPassword: { type: string, minLength: 6 }
+ *     responses:
+ *       200: { description: Khôi phục mật khẩu thành công }
+ *       400: { description: Token không hợp lệ hoặc đã hết hạn }
+ */
+router.post('/reset-password', validate(resetPasswordSchema), authController.resetPassword);
 
 module.exports = router;

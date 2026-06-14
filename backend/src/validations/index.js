@@ -108,6 +108,36 @@ const changePasswordSchema = Joi.object({
     }),
 });
 
+const forgotPasswordSchema = Joi.object({
+  email: Joi.string()
+    .email()
+    .required()
+    .messages({
+      'string.email': 'Email không đúng định dạng',
+      'any.required': 'Email là bắt buộc',
+      'string.empty': 'Email không được để trống',
+    }),
+});
+
+const resetPasswordSchema = Joi.object({
+  token: Joi.string()
+    .required()
+    .messages({
+      'any.required': 'Token khôi phục mật khẩu là bắt buộc',
+      'string.empty': 'Token khôi phục mật khẩu không được để trống',
+    }),
+  newPassword: Joi.string()
+    .min(6)
+    .max(50)
+    .required()
+    .messages({
+      'string.min': 'Mật khẩu mới phải có ít nhất 6 ký tự',
+      'any.required': 'Mật khẩu mới là bắt buộc',
+      'string.empty': 'Mật khẩu mới không được để trống',
+    }),
+});
+
+
 const refreshTokenSchema = Joi.object({
   refreshToken: Joi.string()
     .required()
@@ -328,6 +358,8 @@ module.exports = {
   loginSchema,
   changePasswordSchema,
   refreshTokenSchema,
+  forgotPasswordSchema,
+  resetPasswordSchema,
   // Appointment
   createAppointmentSchema,
   updateAppointmentStatusSchema,

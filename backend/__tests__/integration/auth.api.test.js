@@ -194,4 +194,70 @@ describe('Auth API Integration Tests', () => {
       expect(refreshRes.body.success).toBe(false);
     });
   });
+
+  describe('Forgot and Reset Password Flow', () => {
+    it('should successfully send a forgot password link', async () => {
+      const res = await request(app)
+        .post('/api/auth/forgot-password')
+        .send({ email: patientData.email });
+
+      expect(res.statusCode).toBe(200);
+      expect(res.body.success).toBe(true);
+      expect(res.body.message).toContain('được gửi đến email');
+    });
+
+    it('should return 404 if email does not exist for forgot password', async () => {
+      const res = await request(app)
+        .post('/api/auth/forgot-password')
+        .send({ email: 'nonexistent@test.com' });
+
+      expect(res.statusCode).toBe(404);
+      expect(res.body.success).toBe(false);
+    });
+
+    it('should successfully reset password with valid token and revoke old sessions', async () => {
+      // Find the user to extract the token
+      const user = await prisma.user.findUnique({
+        where: { email: patientData.email },
+      });
+      const token = user.resetPasswordToken;
+      expect(token).toBeDefined();
+      expect(token).not.toBeNull();
+
+      // Reset password
+      const res = await request(app)
+        .post('/api/auth/reset-password')
+        .send({
+          token,
+          newPassword: 'resetpassword123',
+        });
+
+      expect(res.statusCode).toBe(200);
+      expect(res.body.success).toBe(true);
+
+      // Verify that user can login with the new password
+      const loginRes = await request(app)
+        .post('/api/auth/login')
+        .send({
+          email: patientData.email,
+          password: 'resetpassword123',
+        });
+
+      expect(loginRes.statusCode).toBe(200);
+      expect(loginRes.body.success).toBe(true);
+      expect(loginRes.body.data).toHaveProperty('accessToken');
+    });
+
+    it('should return 400 for invalid or expired token on reset password', async () => {
+      const res = await request(app)
+        .post('/api/auth/reset-password')
+        .send({
+          token: 'invalid-or-expired-token',
+          newPassword: 'resetpassword123',
+        });
+
+      expect(res.statusCode).toBe(400);
+      expect(res.body.success).toBe(false);
+    });
+  });
 });

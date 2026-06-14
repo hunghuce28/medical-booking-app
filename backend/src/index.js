@@ -2,6 +2,7 @@ const express = require("express");
 const cors = require("cors");
 const http = require("http");
 const helmet = require("helmet");
+const compression = require("compression");
 const rateLimit = require("express-rate-limit");
 const path = require("path");
 const swaggerUi = require("swagger-ui-express");
@@ -20,6 +21,7 @@ const app = express();
 // Security Middlewares
 app.use(helmet());
 app.use(helmet.crossOriginResourcePolicy({ policy: "cross-origin" })); // Cho phép load ảnh từ các origin khác
+app.use(compression());
 
 // Rate limiting
 const limiter = rateLimit({

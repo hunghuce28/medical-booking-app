@@ -56,6 +56,24 @@ class AuthController {
     const sessions = await authService.getActiveSessions(req.user.id);
     res.status(200).json({ success: true, data: sessions });
   });
+
+  forgotPassword = asyncHandler(async (req, res) => {
+    const { email } = req.body;
+    const result = await authService.forgotPassword(email, req);
+    res.status(200).json({
+      success: true,
+      message: result.message
+    });
+  });
+
+  resetPassword = asyncHandler(async (req, res) => {
+    const { token, newPassword } = req.body;
+    const result = await authService.resetPassword(token, newPassword, req);
+    res.status(200).json({
+      success: true,
+      message: result.message
+    });
+  });
 }
 
 module.exports = new AuthController();

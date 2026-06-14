@@ -77,6 +77,8 @@ model User {
   isActive     Boolean  @default(true)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+  resetPasswordToken   String?   @unique
+  resetPasswordExpires DateTime?
 
   // Relations
   patient       Patient?

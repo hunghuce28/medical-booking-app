@@ -5,12 +5,14 @@
 
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const crypto = require('crypto');
 const envConfig = require('../utils/env');
 const userRepo = require('../repositories/user.repository');
 const patientRepo = require('../repositories/patient.repository');
 const refreshTokenRepo = require('../repositories/refresh-token.repository');
 const auditService = require('./audit.service');
 const { ApiError } = require('../utils/errorHandler');
+const notificationService = require('./notification.service');
 
 const JWT_SECRET = envConfig.JWT_SECRET || process.env.JWT_SECRET;
 if (!JWT_SECRET) {
@@ -278,6 +280,111 @@ class AuthService {
       ipAddress: req?.ip || null,
       expiresAt,
     });
+  }
+
+  /**
+   * Quên mật khẩu — tạo token khôi phục và gửi email
+   */
+  async forgotPassword(email, req = null) {
+    if (!email) {
+      throw new ApiError('Email là bắt buộc', 400);
+    }
+
+    const user = await userRepo.findByEmail(email);
+    if (!user) {
+      throw new ApiError('Email không tồn tại trong hệ thống!', 404);
+    }
+
+    // Sinh token khôi phục và hết hạn (15 phút)
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    const expires = new Date(Date.now() + 15 * 60 * 1000);
+
+    // Lưu vào database
+    await userRepo.update(user.id, {
+      resetPasswordToken: resetToken,
+      resetPasswordExpires: expires,
+    });
+
+    // Tạo link reset
+    const clientUrl = process.env.CLIENT_URL || (req ? `${req.protocol}://${req.get('host')}` : 'http://localhost:3000');
+    const resetLink = `${clientUrl}/api/auth/reset-password?token=${resetToken}`;
+
+    // Gửi email khôi phục
+    const subject = '[Medical Booking] Khôi phục mật khẩu tài khoản';
+    const html = `
+      <div style="font-family: sans-serif; padding: 20px; color: #333; max-width: 600px; margin: 0 auto; border: 1px solid #e5e7eb; border-radius: 8px;">
+        <h2 style="color: #4f46e5; border-bottom: 2px solid #e5e7eb; padding-bottom: 10px;">Yêu Cầu Khôi Phục Mật Khẩu</h2>
+        <p>Xin chào <strong>${user.fullName}</strong>,</p>
+        <p>Chúng tôi nhận được yêu cầu khôi phục mật khẩu cho tài khoản của bạn. Vui lòng bấm vào liên kết dưới đây để thiết lập mật khẩu mới (Liên kết này có hiệu lực trong vòng 15 phút):</p>
+        <div style="text-align: center; margin: 25px 0;">
+          <a href="${resetLink}" style="background-color: #4f46e5; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;">Khôi Phục Mật Khẩu</a>
+        </div>
+        <p>If you did not request a password reset, please ignore this email. Your account is secure.</p>
+        <p style="font-size: 12px; color: #9ca3af; margin-top: 20px;">Hoặc copy liên kết sau vào trình duyệt:<br/> ${resetLink}</p>
+      </div>
+    `;
+
+    await notificationService.sendEmailNotification({ to: user.email, subject, html });
+
+    // Ghi audit log
+    auditService.log({
+      userId: user.id,
+      action: 'UPDATE',
+      entityType: 'User',
+      entityId: user.id,
+      newValue: { action: 'forgot_password_requested' },
+      req,
+    });
+
+    return { message: 'Link khôi phục mật khẩu đã được gửi đến email của bạn' };
+  }
+
+  /**
+   * Đặt lại mật khẩu mới
+   */
+  async resetPassword(token, newPassword, req = null) {
+    if (!token) {
+      throw new ApiError('Token khôi phục mật khẩu là bắt buộc', 400);
+    }
+    if (!newPassword || newPassword.length < 6) {
+      throw new ApiError('Mật khẩu mới phải có ít nhất 6 ký tự!', 400);
+    }
+
+    // Tìm user với token khôi phục
+    const user = await userRepo.findOne({
+      resetPasswordToken: token,
+      resetPasswordExpires: { gt: new Date() },
+    });
+
+    if (!user) {
+      throw new ApiError('Token khôi phục mật khẩu không hợp lệ hoặc đã hết hạn!', 400);
+    }
+
+    // Hash mật khẩu mới
+    const salt = await bcrypt.genSalt(10);
+    const passwordHash = await bcrypt.hash(newPassword, salt);
+
+    // Cập nhật passwordHash mới, đồng thời xóa token
+    await userRepo.update(user.id, {
+      passwordHash,
+      resetPasswordToken: null,
+      resetPasswordExpires: null,
+    });
+
+    // Revoke toàn bộ session cũ để bắt buộc đăng nhập lại ở mọi nơi
+    await refreshTokenRepo.revokeAllByUser(user.id);
+
+    // Ghi audit log
+    auditService.log({
+      userId: user.id,
+      action: 'UPDATE',
+      entityType: 'User',
+      entityId: user.id,
+      newValue: { action: 'reset_password_completed' },
+      req,
+    });
+
+    return { message: 'Mật khẩu đã được khôi phục thành công. Vui lòng đăng nhập lại!' };
   }
 }
 

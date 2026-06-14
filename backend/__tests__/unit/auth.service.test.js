@@ -7,6 +7,9 @@
 jest.mock('../../src/repositories/user.repository');
 jest.mock('../../src/repositories/refresh-token.repository');
 jest.mock('../../src/services/audit.service');
+jest.mock('../../src/services/notification.service', () => ({
+  sendEmailNotification: jest.fn().mockResolvedValue({ messageId: 'test-mail-id' }),
+}));
 
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
@@ -224,6 +227,73 @@ describe('AuthService', () => {
       await expect(authService.refreshToken(token)).rejects.toThrow(
         'Refresh token đã bị thu hồi!'
       );
+    });
+  });
+
+  // ========================
+  // FORGOT PASSWORD
+  // ========================
+  describe('forgotPassword', () => {
+    it('should generate reset token and call sendEmailNotification', async () => {
+      const mockUser = {
+        id: 1,
+        email: 'user@test.com',
+        fullName: 'Test User',
+      };
+      userRepo.findByEmail.mockResolvedValue(mockUser);
+      userRepo.update.mockResolvedValue(mockUser);
+
+      const notificationService = require('../../src/services/notification.service');
+
+      const result = await authService.forgotPassword('user@test.com');
+      
+      expect(result.message).toBe('Link khôi phục mật khẩu đã được gửi đến email của bạn');
+      expect(userRepo.update).toHaveBeenCalled();
+      expect(notificationService.sendEmailNotification).toHaveBeenCalled();
+    });
+
+    it('should throw error if email does not exist', async () => {
+      userRepo.findByEmail.mockResolvedValue(null);
+
+      await expect(
+        authService.forgotPassword('nonexistent@test.com')
+      ).rejects.toThrow('Email không tồn tại trong hệ thống!');
+    });
+  });
+
+  // ========================
+  // RESET PASSWORD
+  // ========================
+  describe('resetPassword', () => {
+    it('should reset password with valid token and revoke old sessions', async () => {
+      const mockUser = {
+        id: 1,
+        email: 'user@test.com',
+        resetPasswordToken: 'valid-token',
+        resetPasswordExpires: new Date(Date.now() + 60000),
+      };
+
+      userRepo.findOne.mockResolvedValue(mockUser);
+      userRepo.update.mockResolvedValue({ id: 1 });
+      refreshTokenRepo.revokeAllByUser.mockResolvedValue({ count: 1 });
+
+      const result = await authService.resetPassword('valid-token', 'new-secure-password');
+
+      expect(result.message).toBe('Mật khẩu đã được khôi phục thành công. Vui lòng đăng nhập lại!');
+      expect(userRepo.update).toHaveBeenCalledWith(1, expect.objectContaining({
+        passwordHash: expect.any(String),
+        resetPasswordToken: null,
+        resetPasswordExpires: null,
+      }));
+      expect(refreshTokenRepo.revokeAllByUser).toHaveBeenCalledWith(1);
+    });
+
+    it('should throw error for expired or invalid token', async () => {
+      userRepo.findOne.mockResolvedValue(null);
+
+      await expect(
+        authService.resetPassword('invalid-token', 'new-secure-password')
+      ).rejects.toThrow('Token khôi phục mật khẩu không hợp lệ hoặc đã hết hạn!');
     });
   });
 });
