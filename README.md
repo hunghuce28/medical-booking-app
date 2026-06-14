@@ -29,6 +29,11 @@ graph TD
 
 Dưới đây là thiết kế cơ sở dữ liệu hoàn chỉnh, bao gồm các bảng bảo mật và động cơ quản lý lịch trực nâng cao:
 
+![Sơ đồ thực thể liên kết ERD](docs/images/database_erd.png)
+
+<details>
+<summary>🖥️ Xem mã nguồn Mermaid ERD</summary>
+
 ```mermaid
 erDiagram
     users ||--o| patients : "userId (1:1)"
@@ -55,6 +60,7 @@ erDiagram
         string name
     }
 ```
+</details>
 
 ---
 
@@ -175,7 +181,10 @@ docker compose up -d --build
 
 Dịch vụ sẽ tự động ánh xạ các cổng:
 - **Backend API:** `http://localhost:5000`
-- **Swagger Docs:** `http://localhost:5000/api-docs`
+- **Swagger Docs:** `http://localhost:5000/api-docs` (Xem minh họa giao diện bên dưới)
+
+![Giao diện tương tác Swagger API Documentation](docs/images/swagger_docs.png)
+
 - **Web Admin Portal:** `http://localhost:3000`
 - **PostgreSQL Database:** `localhost:5432`
 - **Redis Cache Server:** `localhost:6379`
@@ -190,6 +199,8 @@ docker compose down
 ## 🧪 Quy trình kiểm thử hệ thống (Testing Suite)
 
 Dự án đi kèm **96 test cases** được viết bằng Jest để đảm bảo tính ổn định và độ tin cậy của mã nguồn.
+
+![Báo cáo độ bao phủ mã nguồn và các test case passing của Jest](docs/images/jest_coverage.png)
 
 ### Chạy toàn bộ Tests
 ```bash
@@ -228,6 +239,9 @@ Hệ thống quản lý lỗi tập trung tại `errorHandler.js` và trả về
 ## 📈 Quy trình tích hợp liên tục (CI/CD Workflows)
 
 Dự án cấu hình GitHub Actions (`.github/workflows/ci.yml`) để tự động hóa kiểm thử phần mềm trên mỗi sự kiện `push` hoặc `pull_request` lên nhánh `main`:
+
+![GitHub Actions CI Pipeline Passing](docs/images/github_ci_passing.png)
+
 1. Khởi tạo dịch vụ PostgreSQL kiểm thử tạm thời.
 2. Kiểm tra lỗi cú pháp (Linting).
 3. Biên dịch ứng dụng (Build validation).
